@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Google Forms Manager - Streamlit Web App
+Google Forms Manager - Simple Streamlit App
 
-A fully functional web application for managing Google Forms with service account authentication.
-Users can create, edit, organize, and manage forms using the service account.
+A simplified web application for managing Google Forms using service account authentication.
+No OAuth required - just uses the service account for all operations.
 """
 
 import streamlit as st
@@ -84,26 +84,8 @@ st.markdown("""
         border-radius: 0.5rem;
         border: 1px solid #bee5eb;
     }
-    .service-account-info {
-        background-color: #e2e3e5;
-        color: #383d41;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        border: 1px solid #d6d8db;
-    }
 </style>
 """, unsafe_allow_html=True)
-
-def initialize_session_state():
-    """Initialize session state variables."""
-    if 'authenticated' not in st.session_state:
-        st.session_state.authenticated = False
-    if 'current_form_id' not in st.session_state:
-        st.session_state.current_form_id = None
-    if 'forms_cache' not in st.session_state:
-        st.session_state.forms_cache = None
-    if 'folders_cache' not in st.session_state:
-        st.session_state.folders_cache = None
 
 def check_service_account():
     """Check if service account is available and working."""
@@ -133,115 +115,6 @@ def check_service_account():
                 return False, path, None
     
     return False, None, None
-
-def login_screen():
-    """Display login screen and service account status."""
-    st.markdown('<h1 class="main-header">📝 Google Forms Manager</h1>', unsafe_allow_html=True)
-    
-    # Check service account status
-    service_account_working, service_account_path, service_email = check_service_account()
-    
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown("""
-        <div class="info-message">
-            <h3>Welcome to Google Forms Manager!</h3>
-            <p>This application allows you to:</p>
-            <ul>
-                <li>Create and manage Google Forms</li>
-                <li>Organize forms in folders</li>
-                <li>Edit existing forms</li>
-                <li>View form responses</li>
-                <li>Access all your forms in one place</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        
-        # Service account status
-        if service_account_working:
-            st.markdown(f"""
-            <div class="success-message">
-                <h4>✅ Service Account Connected</h4>
-                <p><strong>Account:</strong> {service_email}</p>
-                <p><strong>File:</strong> {service_account_path}</p>
-                <p>You can now access and manage Google Forms!</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            if st.button("🚀 Enter Application", type="primary", use_container_width=True):
-                st.session_state.authenticated = True
-                st.rerun()
-        else:
-            st.markdown("""
-            <div class="error-message">
-                <h4>❌ Service Account Not Found</h4>
-                <p>Please ensure you have a valid service account JSON file in one of these locations:</p>
-                <ul>
-                    <li>service_account.json</li>
-                    <li>forms_agent/service-account-key.json</li>
-                    <li>service-account-key.json</li>
-                </ul>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        st.markdown("""
-        <div class="info-message">
-            <h4>📋 Features:</h4>
-            <ul>
-                <li><strong>Form Creation:</strong> Create new forms with various question types</li>
-                <li><strong>Form Management:</strong> List, edit, and delete your forms</li>
-                <li><strong>Organization:</strong> Create folders and organize your forms</li>
-                <li><strong>Responses:</strong> View and analyze form responses</li>
-                <li><strong>Settings:</strong> Configure form settings and permissions</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
-
-def main_app():
-    """Main application interface for authenticated users."""
-    st.markdown('<h1 class="main-header">📝 Google Forms Manager</h1>', unsafe_allow_html=True)
-    
-    # Get service account info
-    _, service_account_path, service_email = check_service_account()
-    
-    # User info in sidebar
-    with st.sidebar:
-        st.subheader("🔧 Service Account")
-        st.write(f"**Account:** {service_email}")
-        st.write(f"**File:** {service_account_path}")
-        
-        st.markdown("---")
-        
-        if st.button("🚪 Exit Application", type="secondary"):
-            st.session_state.authenticated = False
-            st.rerun()
-    
-    # Main navigation
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "📋 My Forms", 
-        "➕ Create Form", 
-        "📁 Organize", 
-        "⚙️ Settings", 
-        "📊 Analytics"
-    ])
-    
-    with tab1:
-        show_my_forms()
-    
-    with tab2:
-        create_new_form()
-    
-    with tab3:
-        organize_forms()
-    
-    with tab4:
-        show_settings()
-    
-    with tab5:
-        show_analytics()
 
 def show_my_forms():
     """Display user's forms with management options."""
@@ -566,8 +439,17 @@ def show_settings():
     """Display application settings and configuration."""
     st.subheader("⚙️ Settings")
     
+    # Get service account info
+    service_account_working, service_account_path, service_email = check_service_account()
+    
     st.write("**Application Information:**")
     st.write(f"**Forms Agent Available:** {'✅ Yes' if FORMS_AGENT_AVAILABLE else '❌ No'}")
+    st.write(f"**Service Account Status:** {'✅ Connected' if service_account_working else '❌ Not Connected'}")
+    
+    if service_account_working:
+        st.write("**Service Account Information:**")
+        st.write(f"**Account:** {service_email}")
+        st.write(f"**File:** {service_account_path}")
     
     st.markdown("---")
     
@@ -655,13 +537,57 @@ def show_analytics():
 
 def main():
     """Main application entry point."""
-    initialize_session_state()
+    # Initialize session state
+    if 'current_form_id' not in st.session_state:
+        st.session_state.current_form_id = None
+    if 'forms_cache' not in st.session_state:
+        st.session_state.forms_cache = None
     
-    # Check if user is authenticated
-    if not st.session_state.authenticated:
-        login_screen()
-    else:
-        main_app()
+    # Check service account status
+    service_account_working, service_account_path, service_email = check_service_account()
+    
+    # Main header
+    st.markdown('<h1 class="main-header">📝 Google Forms Manager</h1>', unsafe_allow_html=True)
+    
+    # Service account status in sidebar
+    with st.sidebar:
+        st.subheader("🔧 Service Account")
+        if service_account_working:
+            st.success("✅ Connected")
+            st.write(f"**Account:** {service_email}")
+            st.write(f"**File:** {service_account_path}")
+        else:
+            st.error("❌ Not Connected")
+            st.write("Please check your service account configuration.")
+        
+        st.markdown("---")
+        
+        if st.button("🔄 Refresh Status", type="secondary"):
+            st.rerun()
+    
+    # Main navigation
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "📋 My Forms", 
+        "➕ Create Form", 
+        "📁 Organize", 
+        "⚙️ Settings", 
+        "📊 Analytics"
+    ])
+    
+    with tab1:
+        show_my_forms()
+    
+    with tab2:
+        create_new_form()
+    
+    with tab3:
+        organize_forms()
+    
+    with tab4:
+        show_settings()
+    
+    with tab5:
+        show_analytics()
 
 if __name__ == "__main__":
     main() 
