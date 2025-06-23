@@ -121,7 +121,10 @@ def check_question_types(questions: List[Dict[str, Any]], tool_context: Optional
             "checkbox_grid": "CHECKBOX_GRID",
             "date": "DATE",
             "time": "TIME",
-            "file_upload": "FILE_UPLOAD"
+            "file_upload": "FILE_UPLOAD",
+            "image": "IMAGE",
+            "video": "VIDEO",
+            "section": "PAGE_BREAK"
         }
         
         type_analysis = {
@@ -280,7 +283,7 @@ def _suggest_type_conversion(original_type: str, question_text: str) -> Optional
 
 
 def _convert_to_google_forms_format(question: Dict[str, Any], google_forms_type: str) -> Dict[str, Any]:
-    """Convert a question to Google Forms API format."""
+    """Convert a question to Google Forms API format with advanced features."""
     converted = {
         "type": google_forms_type,
         "question": question.get("question", ""),
@@ -292,6 +295,7 @@ def _convert_to_google_forms_format(question: Dict[str, Any], google_forms_type:
         options = question.get("options", [])
         if options:
             converted["options"] = options
+        converted["shuffle"] = question.get("shuffle", False)
     
     elif google_forms_type == "LINEAR_SCALE":
         converted["min_value"] = question.get("min_value", 1)
@@ -302,9 +306,36 @@ def _convert_to_google_forms_format(question: Dict[str, Any], google_forms_type:
     elif google_forms_type in ["MULTIPLE_CHOICE_GRID", "CHECKBOX_GRID"]:
         converted["rows"] = question.get("rows", [])
         converted["columns"] = question.get("columns", [])
+        converted["shuffle"] = question.get("shuffle", False)
+    
+    elif google_forms_type == "DATE":
+        converted["include_time"] = question.get("include_time", False)
+        converted["include_year"] = question.get("include_year", True)
+    
+    elif google_forms_type == "TIME":
+        converted["duration"] = question.get("duration", False)
     
     elif google_forms_type == "FILE_UPLOAD":
+        converted["folder_id"] = question.get("folder_id", "")
         converted["max_files"] = question.get("max_files", 1)
-        converted["max_file_size"] = question.get("max_file_size", 10)  # MB
+        converted["max_file_size"] = question.get("max_file_size", 10485760)  # 10MB default
+        converted["allowed_file_types"] = question.get("allowed_file_types", [])
+    
+    elif google_forms_type == "IMAGE":
+        converted["content_uri"] = question.get("content_uri", "")
+        converted["alignment"] = question.get("alignment", "LEFT")
+        converted["width"] = question.get("width", 0)
+        converted["height"] = question.get("height", 0)
+    
+    elif google_forms_type == "VIDEO":
+        converted["youtube_uri"] = question.get("youtube_uri", "")
+    
+    elif google_forms_type == "PAGE_BREAK":
+        converted["navigation_type"] = question.get("navigation_type", "CONTINUE")
+        converted["condition"] = question.get("condition", None)
+    
+    # Add quiz grading if provided
+    if "grading" in question:
+        converted["grading"] = question["grading"]
     
     return converted 

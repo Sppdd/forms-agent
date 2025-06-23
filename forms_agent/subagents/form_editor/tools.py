@@ -114,15 +114,20 @@ def update_form_info(form_id: str, title: str, description: str, tool_context: O
 
 def modify_questions(form_id: str, modifications: List[Dict[str, Any]], tool_context: Optional[ToolContext] = None) -> Dict[str, Any]:
     """
-    Modify questions in the form (add, edit, delete).
+    Modify questions in the form (add, edit, delete) with advanced question types.
     
     Use this tool when you need to make changes to questions in an existing Google Form.
     This tool supports adding new questions, updating existing questions, and deleting
-    questions from the form.
+    questions from the form. Supports all Google Forms question types including quizzes,
+    grids, date/time, file upload, images, videos, and sections.
     
     Args:
         form_id: The Google Form ID to modify
-        modifications: List of modification operations (add, update, delete)
+        modifications: List of modification operations (add, update, delete) with:
+            - operation: "add", "update", or "delete"
+            - question: Question data for add/update operations
+            - item_id: Item ID for update/delete operations
+            - index: Position for add/delete operations
         
     Returns:
         A dictionary containing modification results with the following structure:
@@ -155,13 +160,17 @@ def modify_questions(form_id: str, modifications: List[Dict[str, Any]], tool_con
             elif operation == "update":
                 item_id = mod.get("item_id")
                 question_data = mod.get("question")
+                
+                # Determine update mask based on question type
+                update_mask = _get_update_mask_for_question(question_data)
+                
                 requests.append({
                     "updateItem": {
                         "item": {
                             "itemId": item_id,
                             **_format_question_for_api(question_data)
                         },
-                        "updateMask": "title,description,questionItem"
+                        "updateMask": update_mask
                     }
                 })
             
@@ -199,16 +208,16 @@ def modify_questions(form_id: str, modifications: List[Dict[str, Any]], tool_con
         return {
             "status": "success",
             "form_id": form_id,
-            "modifications_applied": len(modifications),
+            "modifications_applied": len(requests),
             "modification_result": result,
-            "message": f"Successfully applied {len(modifications)} modifications to form {form_id}"
+            "message": f"Successfully applied {len(requests)} modifications to form {form_id}"
         }
         
     except HttpError as e:
         error_details = json.loads(e.content.decode())
         return {
             "status": "error",
-            "error_message": f"Failed to modify questions: {error_details.get('error', {}).get('message', str(e))}",
+            "error_message": f"Failed to modify form: {error_details.get('error', {}).get('message', str(e))}",
             "error_code": e.resp.status,
             "error_type": "HttpError"
         }
@@ -430,9 +439,13 @@ def _format_question_for_api(question: Dict[str, Any]) -> Dict[str, Any]:
             "choiceQuestion": {
                 "type": "RADIO",
                 "options": [{"value": str(option)} for option in options],
-                "shuffle": False
+                "shuffle": question.get("shuffle", False)
             }
         }
+        
+        # Add grading if provided
+        if "grading" in question:
+            formatted_question["question"]["grading"] = question["grading"]
     
     elif question_type == "checkbox":
         options = question.get("options", [])
@@ -442,9 +455,12 @@ def _format_question_for_api(question: Dict[str, Any]) -> Dict[str, Any]:
             "choiceQuestion": {
                 "type": "CHECKBOX",
                 "options": [{"value": str(option)} for option in options],
-                "shuffle": False
+                "shuffle": question.get("shuffle", False)
             }
         }
+        
+        if "grading" in question:
+            formatted_question["question"]["grading"] = question["grading"]
     
     elif question_type == "dropdown":
         options = question.get("options", [])
@@ -456,6 +472,9 @@ def _format_question_for_api(question: Dict[str, Any]) -> Dict[str, Any]:
                 "options": [{"value": str(option)} for option in options]
             }
         }
+        
+        if "grading" in question:
+            formatted_question["question"]["grading"] = question["grading"]
     
     elif question_type == "short_answer":
         formatted_question["question"] = {
@@ -465,6 +484,9 @@ def _format_question_for_api(question: Dict[str, Any]) -> Dict[str, Any]:
                 "type": "SHORT_ANSWER"
             }
         }
+        
+        if "grading" in question:
+            formatted_question["question"]["grading"] = question["grading"]
     
     elif question_type == "long_answer":
         formatted_question["question"] = {
@@ -474,6 +496,9 @@ def _format_question_for_api(question: Dict[str, Any]) -> Dict[str, Any]:
                 "type": "PARAGRAPH"
             }
         }
+        
+        if "grading" in question:
+            formatted_question["question"]["grading"] = question["grading"]
     
     elif question_type == "linear_scale":
         min_value = question.get("min_value", 1)
@@ -492,6 +517,104 @@ def _format_question_for_api(question: Dict[str, Any]) -> Dict[str, Any]:
             }
         }
     
+    elif question_type == "multiple_choice_grid":
+        rows = question.get("rows", [])
+        columns = question.get("columns", [])
+        
+        formatted_question["question"] = {
+            "questionId": formatted_question["questionId"],
+            "required": required,
+            "gridQuestion": {
+                "columns": {"options": [{"value": str(col)} for col in columns]},
+                "rows": {"options": [{"value": str(row)} for row in rows]},
+                "shuffleQuestions": question.get("shuffle", False)
+            }
+        }
+    
+    elif question_type == "checkbox_grid":
+        rows = question.get("rows", [])
+        columns = question.get("columns", [])
+        
+        formatted_question["question"] = {
+            "questionId": formatted_question["questionId"],
+            "required": required,
+            "gridQuestion": {
+                "columns": {"options": [{"value": str(col)} for col in columns]},
+                "rows": {"options": [{"value": str(row)} for row in rows]},
+                "shuffleQuestions": question.get("shuffle", False)
+            }
+        }
+    
+    elif question_type == "date":
+        formatted_question["question"] = {
+            "questionId": formatted_question["questionId"],
+            "required": required,
+            "dateQuestion": {
+                "includeTime": question.get("include_time", False),
+                "includeYear": question.get("include_year", True)
+            }
+        }
+    
+    elif question_type == "time":
+        formatted_question["question"] = {
+            "questionId": formatted_question["questionId"],
+            "required": required,
+            "timeQuestion": {
+                "duration": question.get("duration", False)
+            }
+        }
+    
+    elif question_type == "file_upload":
+        formatted_question["question"] = {
+            "questionId": formatted_question["questionId"],
+            "required": required,
+            "fileUploadQuestion": {
+                "folderId": question.get("folder_id", ""),
+                "maxFiles": question.get("max_files", 1),
+                "maxFileSize": question.get("max_file_size", 10485760),  # 10MB default
+                "allowedFileTypes": question.get("allowed_file_types", [])
+            }
+        }
+    
+    elif question_type == "image":
+        content_uri = question.get("content_uri", "")
+        alignment = question.get("alignment", "LEFT")
+        width = question.get("width", 0)
+        height = question.get("height", 0)
+        
+        formatted_question["imageItem"] = {
+            "image": {
+                "contentUri": content_uri,
+                "properties": {
+                    "alignment": alignment
+                }
+            }
+        }
+        
+        if width and height:
+            formatted_question["imageItem"]["image"]["properties"]["width"] = width
+            formatted_question["imageItem"]["image"]["properties"]["height"] = height
+    
+    elif question_type == "video":
+        youtube_uri = question.get("youtube_uri", "")
+        
+        formatted_question["videoItem"] = {
+            "video": {
+                "youtubeUri": youtube_uri
+            }
+        }
+    
+    elif question_type == "section":
+        navigation_type = question.get("navigation_type", "CONTINUE")
+        
+        formatted_question["pageBreakItem"] = {
+            "navigationType": navigation_type
+        }
+        
+        # Add conditional logic if provided
+        if "condition" in question:
+            formatted_question["pageBreakItem"]["condition"] = question["condition"]
+    
     else:
         # Default to short answer for unknown types
         formatted_question["question"] = {
@@ -503,3 +626,42 @@ def _format_question_for_api(question: Dict[str, Any]) -> Dict[str, Any]:
         }
     
     return formatted_question 
+
+
+def _get_update_mask_for_question(question_data: Dict[str, Any]) -> str:
+    """Determine the appropriate update mask for a question based on its type."""
+    question_type = question_data.get("type", "").lower()
+    
+    # Base mask parts
+    mask_parts = ["title"]
+    
+    # Add type-specific mask parts
+    if question_type in ["multiple_choice", "checkbox", "dropdown"]:
+        mask_parts.extend(["questionItem.question.choiceQuestion", "questionItem.question.required"])
+    elif question_type in ["short_answer", "long_answer"]:
+        mask_parts.extend(["questionItem.question.textQuestion", "questionItem.question.required"])
+    elif question_type == "linear_scale":
+        mask_parts.extend(["questionItem.question.scaleQuestion", "questionItem.question.required"])
+    elif question_type in ["multiple_choice_grid", "checkbox_grid"]:
+        mask_parts.extend(["questionItem.question.gridQuestion", "questionItem.question.required"])
+    elif question_type == "date":
+        mask_parts.extend(["questionItem.question.dateQuestion", "questionItem.question.required"])
+    elif question_type == "time":
+        mask_parts.extend(["questionItem.question.timeQuestion", "questionItem.question.required"])
+    elif question_type == "file_upload":
+        mask_parts.extend(["questionItem.question.fileUploadQuestion", "questionItem.question.required"])
+    elif question_type == "image":
+        mask_parts.extend(["imageItem.image", "imageItem.image.properties"])
+    elif question_type == "video":
+        mask_parts.extend(["videoItem.video"])
+    elif question_type == "section":
+        mask_parts.extend(["pageBreakItem.navigationType"])
+    else:
+        # Default to question item
+        mask_parts.append("questionItem")
+    
+    # Add grading if present
+    if "grading" in question_data:
+        mask_parts.append("questionItem.question.grading")
+    
+    return ",".join(mask_parts) 

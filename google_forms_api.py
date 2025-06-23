@@ -105,13 +105,14 @@ class GoogleFormsAPI:
         self.forms_service = build('forms', 'v1', credentials=creds)
         self.drive_service = build('drive', 'v3', credentials=creds)
     
-    def create_form(self, title: str, description: str = "") -> Dict[str, Any]:
+    def create_form(self, title: str, description: str = "", form_type: str = "form") -> Dict[str, Any]:
         """
         Create a new Google Form.
         
         Args:
             title: Form title
             description: Form description (auto-generated if empty)
+            form_type: Type of form to create ("form" or "quiz")
             
         Returns:
             Dict containing form creation results
@@ -119,7 +120,7 @@ class GoogleFormsAPI:
         try:
             # Auto-generate description if empty
             if not description or description.strip() == "":
-                description = f"Form created automatically - {title}"
+                description = f"{form_type.title()} created automatically - {title}"
             
             # Google Forms API only allows setting title during creation
             form_request = {
@@ -141,6 +142,15 @@ class GoogleFormsAPI:
                 if update_result["result"] == "success":
                     description = update_result.get("updated_description", description)
             
+            # Configure as quiz if specified
+            if form_type.lower() == "quiz":
+                quiz_settings = {
+                    "is_quiz": True
+                }
+                quiz_result = self.configure_settings(form_id, quiz_settings)
+                if quiz_result["result"] != "success":
+                    print(f"Warning: Failed to configure quiz settings: {quiz_result['message']}")
+            
             return {
                 "result": "success",
                 "form_id": form_id,
@@ -148,7 +158,8 @@ class GoogleFormsAPI:
                 "responder_url": responder_url,
                 "form_info": result.get('info', {}),
                 "description": description,
-                "message": f"Successfully created form: {title}"
+                "form_type": form_type,
+                "message": f"Successfully created {form_type}: {title}"
             }
             
         except HttpError as e:
@@ -656,10 +667,10 @@ class GoogleFormsAPI:
 
 
 # Standalone functions for easy integration
-def create_google_form_standalone(title: str, description: str = "", service_account_file: str = SERVICE_ACCOUNT_FILE) -> Dict[str, Any]:
+def create_google_form_standalone(title: str, description: str = "", form_type: str = "form", service_account_file: str = SERVICE_ACCOUNT_FILE) -> Dict[str, Any]:
     """Standalone function to create a Google Form."""
     api = GoogleFormsAPI(service_account_file)
-    return api.create_form(title, description)
+    return api.create_form(title, description, form_type)
 
 
 def update_form_standalone(form_id: str, title: str = "", description: str = "", service_account_file: str = SERVICE_ACCOUNT_FILE) -> Dict[str, Any]:
