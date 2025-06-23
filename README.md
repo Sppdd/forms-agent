@@ -1,237 +1,197 @@
-# Google Forms Manager
+# 📝 Google Forms Manager
 
-A comprehensive Google Forms management system with AI-powered agents and a modern web interface. Create, edit, organize, and manage Google Forms with advanced automation capabilities.
+A powerful Streamlit web application for managing Google Forms with OAuth authentication. Create, edit, organize, and manage your Google Forms through an intuitive web interface.
 
-## 🌟 Features
+## ✨ Features
 
-### 🤖 AI-Powered Agents
-- **Document Parser Agent**: Extract form requirements from documents
-- **Form Creator Agent**: Automatically generate forms from specifications
-- **Form Editor Agent**: Modify existing forms with intelligent suggestions
-- **Form Validator Agent**: Validate forms for completeness and best practices
-
-### 🌐 Web Interface
-- **Modern Streamlit UI**: Beautiful, responsive web application
-- **Google OAuth Authentication**: Secure login with Google accounts
-- **Real-time Form Management**: Create, edit, and organize forms
-- **Analytics Dashboard**: View form statistics and usage metrics
-- **Folder Organization**: Organize forms in Google Drive folders
-
-### 🔧 Advanced Capabilities
-- **Service Account Integration**: Automated form operations
-- **Google Drive Integration**: Seamless file management
-- **Batch Operations**: Process multiple forms efficiently
-- **Response Analysis**: View and analyze form responses
-- **Custom Question Types**: Support for all Google Forms question types
+- 🔐 **OAuth Authentication**: Secure authentication with your Google account
+- 📝 **Form Creation**: Create new forms with various question types
+- 📋 **Form Management**: List, view, and edit your existing forms
+- 📁 **Organization**: Organize forms in folders (coming soon)
+- 📊 **Analytics**: View form responses and analytics (coming soon)
+- 🎨 **Modern UI**: Beautiful and intuitive user interface
+- ☁️ **Cloud Ready**: Deploy to Streamlit Cloud for public access
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Python 3.8+
-- Google Cloud Project with Forms API enabled
-- Google OAuth credentials (for web app)
-- Service account key (for automated operations)
-
-### Installation
+### Local Development
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Sppdd/forms-agent.git
+   git clone https://github.com/your-username/forms-agent.git
    cd forms-agent
    ```
 
 2. **Install dependencies**
    ```bash
-   pip install -r requirements.txt
    pip install -r requirements_streamlit.txt
    ```
 
-3. **Set up Google Cloud credentials**
-   - Place your service account JSON file in `forms_agent/service-account-key.json`
-   - Configure OAuth credentials for the web app (see deployment guide)
+3. **Set up OAuth credentials**
+   - Follow the [Google Cloud Setup Guide](STREAMLIT_CLOUD_DEPLOYMENT.md#step-1-google-cloud-setup)
+   - Set environment variables:
+     ```bash
+     export GOOGLE_CLIENT_ID="your-client-id"
+     export GOOGLE_CLIENT_SECRET="your-client-secret"
+     ```
 
-4. **Configure Streamlit secrets**
+4. **Run the application**
    ```bash
-   # Create .streamlit/secrets.toml
-   [auth]
-   redirect_uri = "http://localhost:8501/oauth2callback"
-   cookie_secret = "your-secure-cookie-secret"
-   client_id = "your-google-client-id"
-   client_secret = "your-google-client-secret"
-   server_metadata_url = "https://accounts.google.com/.well-known/openid-configuration"
-
-   [forms_agent]
-   service_account_path = "forms_agent/service-account-key.json"
+   streamlit run streamlit_app_oauth.py
    ```
 
-### Running the Application
+### Streamlit Cloud Deployment
 
-#### Web Interface (Recommended)
+For public deployment, follow the complete [Streamlit Cloud Deployment Guide](STREAMLIT_CLOUD_DEPLOYMENT.md).
+
+## 📁 Project Structure
+
+```
+forms-agent/
+├── streamlit_app_oauth.py      # Main OAuth-enabled Streamlit app
+├── streamlit_app.py            # Service account version (legacy)
+├── streamlit_app_simple.py     # Simple version
+├── requirements_streamlit.txt   # Dependencies for Streamlit
+├── requirements.txt            # Full dependencies
+├── README.md                   # This file
+├── STREAMLIT_CLOUD_DEPLOYMENT.md # Deployment guide
+└── forms_agent/               # Core forms agent modules
+    ├── __init__.py
+    ├── agent.py               # Main agent
+    └── subagents/             # Specialized subagents
+        ├── form_creator/      # Form creation tools
+        ├── form_editor/       # Form editing tools
+        ├── form_validator/    # Form validation tools
+        └── document_parser/   # Document parsing tools
+```
+
+## 🔧 Configuration
+
+### OAuth Setup
+
+The application uses OAuth 2.0 for secure authentication. You need to:
+
+1. **Create a Google Cloud Project**
+2. **Enable Required APIs**:
+   - Google Forms API
+   - Google Drive API
+3. **Create OAuth 2.0 Credentials**
+4. **Configure Environment Variables**
+
+See [STREAMLIT_CLOUD_DEPLOYMENT.md](STREAMLIT_CLOUD_DEPLOYMENT.md) for detailed instructions.
+
+### Environment Variables
+
+For local development:
 ```bash
-streamlit run streamlit_app.py
-```
-Visit `http://localhost:8501` and log in with your Google account.
-
-#### Command Line Interface
-```bash
-# Test service account
-python quick_form_access.py
-
-# Run forms management example
-python forms_drive_management_example.py
+GOOGLE_CLIENT_ID=your-oauth-client-id
+GOOGLE_CLIENT_SECRET=your-oauth-client-secret
 ```
 
-## 📖 Usage Guide
+For Streamlit Cloud, add these as secrets in your app settings.
 
-### Web Interface
+## 🎯 Usage
 
-1. **Authentication**: Log in with your Google account
-2. **My Forms**: View and manage all your forms
-3. **Create Form**: Build new forms with an intuitive interface
-4. **Organize**: Create folders and organize your forms
-5. **Analytics**: View form statistics and usage data
+### Authentication
 
-### Programmatic Usage
+1. Visit the application
+2. Click "Authorize" to authenticate with Google
+3. Grant necessary permissions
+4. Enter the authorization code
+5. Start managing your forms!
 
-```python
-from forms_agent.subagents.form_creator.tools import create_google_form, list_my_forms
-from forms_agent.subagents.form_editor.tools import update_form_info, get_form_responses
+### Creating Forms
 
-# Create a new form
-result = create_google_form(
-    title="Customer Feedback Survey",
-    description="Help us improve our services",
-    form_type="form"
-)
+1. Navigate to "Create Form"
+2. Enter form title and description
+3. Click "Create Form"
+4. Your form will be created and you'll get the links
 
-# List all forms
-forms = list_my_forms()
+### Managing Forms
 
-# Get form responses
-responses = get_form_responses("form_id_here")
-```
-
-## 🏗️ Architecture
-
-### Agent System
-```
-forms_agent/
-├── agent.py                 # Main orchestrator agent
-├── optimized_agent.py       # Performance-optimized version
-└── subagents/
-    ├── document_parser/     # Extract requirements from docs
-    ├── form_creator/        # Generate new forms
-    ├── form_editor/         # Modify existing forms
-    └── form_validator/      # Validate form completeness
-```
-
-### Web Application
-```
-├── streamlit_app.py         # Main web application
-├── .streamlit/secrets.toml  # OAuth configuration
-├── Dockerfile              # Container configuration
-└── docker-compose.yml      # Multi-service deployment
-```
-
-## 🚀 Deployment
-
-### Streamlit Community Cloud
-1. Push code to GitHub
-2. Connect repository to Streamlit Cloud
-3. Configure secrets in Streamlit Cloud dashboard
-4. Deploy
-
-### Docker Deployment
-```bash
-# Build and run with Docker Compose
-docker-compose up -d
-
-# Or build manually
-docker build -t forms-manager .
-docker run -p 8501:8080 forms-manager
-```
-
-### Google Cloud Run
-```bash
-gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/forms-manager
-gcloud run deploy forms-manager --image gcr.io/YOUR_PROJECT_ID/forms-manager
-```
-
-For detailed deployment instructions, see [deploy_guide.md](deploy_guide.md).
+1. Go to "My Forms" to see all your forms
+2. Click "View" to see form details
+3. Click "Edit" to modify forms
+4. Use "Refresh" to update the list
 
 ## 🔐 Security
 
-- **OAuth 2.0 Authentication**: Secure Google account login
-- **Service Account Security**: Isolated credentials for automated operations
-- **HTTPS Enforcement**: All production deployments use SSL
-- **Rate Limiting**: Protection against abuse
-- **Input Validation**: Sanitized user inputs
+- ✅ OAuth 2.0 authentication
+- ✅ Secure token handling
+- ✅ Session-based authentication
+- ✅ No service account files needed
+- ✅ Environment variable protection
 
-## 📊 API Reference
+## 🛠️ Development
 
-### Form Creation
-```python
-create_google_form(title, description, form_type="form")
-add_questions_to_form(form_id, questions)
-setup_form_settings(form_id, settings)
-```
+### Adding New Features
 
-### Form Management
-```python
-list_my_forms()
-get_form_details(form_id)
-update_form_info(form_id, updates)
-delete_form(form_id)
-```
+1. **Backend**: Add new functions in the appropriate subagent
+2. **Frontend**: Update the Streamlit app interface
+3. **Testing**: Test locally before deploying
 
-### Organization
-```python
-create_forms_folder(name, parent_folder_id=None)
-move_form_to_folder(form_id, folder_id)
-```
+### Code Structure
 
-### Responses
-```python
-get_form_responses(form_id)
-```
+- **`streamlit_app_oauth.py`**: Main application with OAuth
+- **`forms_agent/`**: Core business logic and API interactions
+- **`subagents/`**: Specialized modules for different tasks
+
+## 📊 API Usage
+
+The application uses these Google APIs:
+- **Google Forms API**: Form creation and management
+- **Google Drive API**: File organization and access
+- **Google Drive File API**: File-specific operations
+
+## 🚀 Deployment
+
+### Streamlit Cloud (Recommended)
+
+1. Push code to GitHub
+2. Connect repository to Streamlit Cloud
+3. Configure OAuth secrets
+4. Deploy!
+
+See [STREAMLIT_CLOUD_DEPLOYMENT.md](STREAMLIT_CLOUD_DEPLOYMENT.md) for complete instructions.
+
+### Other Platforms
+
+The application can be deployed to any platform that supports Streamlit:
+- Heroku
+- AWS
+- Google Cloud Platform
+- Azure
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
+4. Test thoroughly
 5. Submit a pull request
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## 🆘 Support
 
-- **Documentation**: Check the guides in this repository
-- **Issues**: Report bugs on GitHub Issues
-- **Discussions**: Join GitHub Discussions for questions
+If you encounter issues:
+
+1. Check the [troubleshooting guide](STREAMLIT_CLOUD_DEPLOYMENT.md#troubleshooting)
+2. Review the deployment documentation
+3. Check Google Cloud Console for API errors
+4. Create an issue in the repository
 
 ## 🔄 Changelog
 
-### v2.0.0 - Web Interface Release
-- ✨ Added Streamlit web application with OAuth
-- 🔐 Google OAuth authentication
-- 📱 Responsive web interface
-- 📊 Analytics dashboard
-- 🗂️ Folder organization features
+### Version 1.0.0
+- ✅ OAuth authentication implementation
+- ✅ Form creation and management
+- ✅ Streamlit Cloud deployment support
+- ✅ Clean codebase structure
+- ✅ Comprehensive documentation
 
-### v1.0.0 - Initial Release
-- 🤖 AI-powered form agents
-- 🔧 Service account integration
-- 📝 Form creation and editing
-- ✅ Form validation
-- 📄 Document parsing
+---
 
-## 🙏 Acknowledgments
-
-- Google Forms API for form management capabilities
-- Streamlit for the web framework
-- Google Cloud Platform for hosting and authentication
-- The open-source community for various dependencies 
+**Happy Form Managing! 📝✨** 
