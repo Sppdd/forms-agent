@@ -1,5 +1,5 @@
 # Google Agent Development Kit (ADK)
-google-adk[database]==0.3.0
+google-adk==0.3.0
 
 # Google API client libraries (compatible with google-adk)
 google-api-python-client>=2.157.0
@@ -7,8 +7,8 @@ google-auth-httplib2>=0.2.0
 google-auth-oauthlib>=1.2.0
 google-auth>=2.25.2
 
-# Streamlit for web interface
-streamlit==1.28.0
+# Streamlit for web interface (updated for better compatibility)
+streamlit>=1.35.0
 
 # Additional dependencies for document processing
 python-docx==0.8.11
@@ -23,8 +23,8 @@ pydantic>=2.5.0
 # Environment management
 python-dotenv==1.1.0
 
-# Data processing
-pandas==2.1.4
+# Data processing (updated pandas for Python 3.13 compatibility)
+pandas>=2.2.0
 requests==2.31.0 
 
 # Additional ADK dependencies
