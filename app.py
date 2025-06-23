@@ -62,20 +62,22 @@ st.markdown("""
     }
     
     .card {
-        background: white;
+        background: #ffffff;
         padding: 1.5rem;
         border-radius: 8px;
-        border: 1px solid #e0e0e0;
+        border: 1px solid #dadce0;
         margin-bottom: 1rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        color: #202124;
     }
     
     .chat-message-user {
-        background: #f8f9fa;
+        background: #f1f3f4;
         padding: 1rem;
         border-radius: 8px;
         margin: 0.5rem 0;
         border-left: 4px solid #4285f4;
+        color: #202124;
     }
     
     .chat-message-agent {
@@ -84,64 +86,153 @@ st.markdown("""
         border-radius: 8px;
         margin: 0.5rem 0;
         border-left: 4px solid #34a853;
+        color: #202124;
     }
     
     .file-card {
-        background: white;
+        background: #ffffff;
         padding: 1rem;
         border-radius: 8px;
-        border: 1px solid #e0e0e0;
+        border: 1px solid #dadce0;
         margin-bottom: 1rem;
         transition: box-shadow 0.2s;
+        color: #202124;
     }
     
     .file-card:hover {
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        border-color: #4285f4;
     }
     
+    /* Button styling */
     .stButton > button {
-        background: #4285f4;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        font-weight: 500;
-        transition: background-color 0.2s;
+        background-color: #4285f4 !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 4px !important;
+        font-weight: 500 !important;
+        transition: background-color 0.2s !important;
+        height: 48px !important;
     }
     
     .stButton > button:hover {
-        background: #3367d6;
+        background-color: #3367d6 !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12) !important;
     }
     
     /* Sidebar styling */
     .css-1d391kg {
-        background-color: #f8f9fa;
+        background-color: #f8f9fa !important;
     }
     
-    /* Remove default streamlit styling */
+    /* Main content area */
     .css-18e3th9 {
-        padding-top: 1rem;
+        padding-top: 1rem !important;
+        background-color: #ffffff !important;
     }
     
     /* Input styling */
-    .stTextArea textarea, .stTextInput input {
-        border: 1px solid #dadce0;
-        border-radius: 4px;
-        background-color: white;
+    .stTextArea textarea {
+        border: 1px solid #dadce0 !important;
+        border-radius: 4px !important;
+        background-color: #ffffff !important;
+        color: #202124 !important;
+    }
+    
+    .stTextInput input {
+        border: 1px solid #dadce0 !important;
+        border-radius: 4px !important;
+        background-color: #ffffff !important;
+        color: #202124 !important;
     }
     
     .stTextArea textarea:focus, .stTextInput input:focus {
-        border-color: #4285f4;
-        box-shadow: 0 0 0 1px #4285f4;
+        border-color: #4285f4 !important;
+        box-shadow: 0 0 0 1px #4285f4 !important;
+    }
+    
+    /* Info/Warning/Error styling */
+    .stAlert {
+        background-color: #ffffff !important;
+        border: 1px solid #dadce0 !important;
+        border-radius: 4px !important;
+        color: #202124 !important;
+    }
+    
+    /* Success message */
+    .stAlert[data-baseweb="notification"] {
+        background-color: #e8f5e8 !important;
+        border-color: #34a853 !important;
+        color: #137333 !important;
+    }
+    
+    /* Error message */
+    .stAlert[data-baseweb="notification"][kind="error"] {
+        background-color: #fce8e6 !important;
+        border-color: #ea4335 !important;
+        color: #d33b2c !important;
+    }
+    
+    /* Warning message */
+    .stAlert[data-baseweb="notification"][kind="warning"] {
+        background-color: #fef7e0 !important;
+        border-color: #fbbc04 !important;
+        color: #b06000 !important;
+    }
+    
+    /* Info message */
+    .stAlert[data-baseweb="notification"][kind="info"] {
+        background-color: #e8f0fe !important;
+        border-color: #4285f4 !important;
+        color: #1967d2 !important;
+    }
+    
+    /* Remove problematic backgrounds */
+    .stApp {
+        background-color: #ffffff !important;
+    }
+    
+    /* Fix text visibility */
+    .stMarkdown {
+        color: #202124 !important;
     }
     
     /* Tab styling */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
+        background-color: transparent !important;
     }
     
     .stTabs [data-baseweb="tab"] {
         padding: 8px 16px;
         border-radius: 4px;
+        background-color: #f8f9fa !important;
+        color: #5f6368 !important;
+    }
+    
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {
+        background-color: #4285f4 !important;
+        color: #ffffff !important;
+    }
+    
+    /* Metric styling */
+    .metric-container {
+        background: #ffffff;
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid #dadce0;
+        text-align: center;
+        color: #202124;
+    }
+    
+    /* Header text fix */
+    h1, h2, h3, h4, h5, h6 {
+        color: #202124 !important;
+    }
+    
+    /* Ensure all text is visible */
+    p, span, div {
+        color: #202124 !important;
     }
 </style>
 """, unsafe_allow_html=True)
