@@ -17,6 +17,7 @@ import requests
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
 import io
 
 # Add the forms_agent directory to the Python path
@@ -48,71 +49,154 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# Custom CSS - Green and Black Theme
 st.markdown("""
 <style>
+    /* Global Styles */
     .main-header {
         font-size: 2.5rem;
         font-weight: bold;
-        background: linear-gradient(90deg, #1f77b4, #28a745);
+        background: linear-gradient(90deg, #00ff41, #32cd32);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         text-align: center;
         margin-bottom: 2rem;
+        text-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
     }
+    
+    /* Card Styles */
     .agent-card {
-        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+        color: #00ff41;
         padding: 1.5rem;
         border-radius: 1rem;
-        border-left: 5px solid #28a745;
+        border-left: 5px solid #00ff41;
         margin-bottom: 1rem;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 15px rgba(0, 255, 65, 0.2);
+        border: 1px solid #333;
     }
+    
+    /* Chat Messages */
     .chat-message-user {
-        background-color: #e3f2fd;
+        background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+        color: #ffffff;
         padding: 1rem;
         border-radius: 1rem;
         margin: 0.5rem 0;
-        border-left: 4px solid #2196f3;
+        border-left: 4px solid #00ff41;
+        box-shadow: 0 2px 10px rgba(0, 255, 65, 0.1);
     }
+    
     .chat-message-agent {
-        background-color: #f1f8e9;
+        background: linear-gradient(135deg, #0d2818, #1a4a2e);
+        color: #00ff41;
         padding: 1rem;
         border-radius: 1rem;
         margin: 0.5rem 0;
-        border-left: 4px solid #4caf50;
+        border-left: 4px solid #32cd32;
+        box-shadow: 0 2px 10px rgba(50, 205, 50, 0.2);
     }
+    
+    /* File Cards */
     .file-card {
-        background-color: #fff;
+        background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+        color: #ffffff;
         padding: 1rem;
         border-radius: 0.5rem;
-        border: 1px solid #dee2e6;
+        border: 1px solid #00ff41;
         margin-bottom: 0.5rem;
-        transition: box-shadow 0.3s;
+        transition: all 0.3s ease;
     }
+    
     .file-card:hover {
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 20px rgba(0, 255, 65, 0.3);
+        border-color: #32cd32;
+        transform: translateY(-2px);
     }
+    
+    /* Status Messages */
     .success-message {
-        background-color: #d4edda;
-        color: #155724;
+        background: linear-gradient(135deg, #0d2818, #1a4a2e);
+        color: #00ff41;
         padding: 1rem;
         border-radius: 0.5rem;
-        border: 1px solid #c3e6cb;
+        border: 1px solid #32cd32;
+        box-shadow: 0 2px 10px rgba(0, 255, 65, 0.2);
     }
+    
     .error-message {
-        background-color: #f8d7da;
-        color: #721c24;
+        background: linear-gradient(135deg, #2d1a1a, #4a1a1a);
+        color: #ff4444;
         padding: 1rem;
         border-radius: 0.5rem;
-        border: 1px solid #f5c6cb;
+        border: 1px solid #ff4444;
+        box-shadow: 0 2px 10px rgba(255, 68, 68, 0.2);
     }
+    
     .info-message {
-        background-color: #d1ecf1;
-        color: #0c5460;
+        background: linear-gradient(135deg, #1a1a2d, #2a2a4a);
+        color: #00ccff;
         padding: 1rem;
         border-radius: 0.5rem;
-        border: 1px solid #bee5eb;
+        border: 1px solid #00ccff;
+        box-shadow: 0 2px 10px rgba(0, 204, 255, 0.2);
+    }
+    
+    /* Buttons */
+    .stButton > button {
+        background: linear-gradient(45deg, #00ff41, #32cd32) !important;
+        color: #000000 !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 15px rgba(0, 255, 65, 0.3) !important;
+    }
+    
+    .stButton > button:hover {
+        background: linear-gradient(45deg, #32cd32, #00ff41) !important;
+        box-shadow: 0 6px 20px rgba(0, 255, 65, 0.5) !important;
+        transform: translateY(-2px) !important;
+    }
+    
+    /* Sidebar */
+    .css-1d391kg {
+        background-color: #1a1a1a !important;
+    }
+    
+    /* Main content area */
+    .css-18e3th9 {
+        background-color: #0f0f0f !important;
+    }
+    
+    /* Text areas and inputs */
+    .stTextArea textarea {
+        background-color: #1a1a1a !important;
+        color: #00ff41 !important;
+        border: 1px solid #00ff41 !important;
+        border-radius: 8px !important;
+    }
+    
+    .stTextInput input {
+        background-color: #1a1a1a !important;
+        color: #00ff41 !important;
+        border: 1px solid #00ff41 !important;
+        border-radius: 8px !important;
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: #1a1a1a !important;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background-color: #2d2d2d !important;
+        color: #00ff41 !important;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background-color: #00ff41 !important;
+        color: #000000 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -140,15 +224,39 @@ def get_oauth_credentials():
         redirect_uri = st.secrets["auth"]["redirect_uri"]
         
         return handle_oauth_flow(client_id, client_secret, redirect_uri)
+    except KeyError as e:
+        st.markdown("""
+        <div class="error-message">
+            <h4>⚙️ OAuth Configuration Missing</h4>
+            <p>Please set up your OAuth credentials in <code>.streamlit/secrets.toml</code>:</p>
+            <pre>[auth]
+client_id = "your-google-client-id"
+client_secret = "your-google-client-secret"
+redirect_uri = "your-app-url"</pre>
+            <p>Follow the Google Cloud Console setup guide to get these credentials.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        return None
     except Exception as e:
         st.error(f"OAuth configuration error: {e}")
-        st.error("Please check your .streamlit/secrets.toml file")
         return None
 
 def handle_oauth_flow(client_id: str, client_secret: str, redirect_uri: str):
     """Handle OAuth flow for Google authentication."""
     
-    # Check for OAuth callback parameters (compatible with older Streamlit versions)
+    # Check if we already have valid credentials
+    if st.session_state.get('credentials'):
+        try:
+            # Refresh token if expired
+            if st.session_state.credentials.expired:
+                st.session_state.credentials.refresh(Request())
+            return st.session_state.credentials
+        except Exception as e:
+            st.warning(f"Token refresh failed: {e}. Please re-authenticate.")
+            st.session_state.authenticated = False
+            st.session_state.credentials = None
+    
+    # Check for OAuth callback parameters
     try:
         query_params = st.query_params
     except AttributeError:
@@ -182,14 +290,17 @@ def handle_oauth_flow(client_id: str, client_secret: str, redirect_uri: str):
                         scopes=SCOPES
                     )
                     
-                    # Get user info
+                    # Test credentials by getting user info
                     user_info = get_user_info(credentials)
+                    if not user_info:
+                        raise Exception("Failed to get user information")
                     
+                    # Store credentials and user info
                     st.session_state.credentials = credentials
                     st.session_state.user_info = user_info
                     st.session_state.authenticated = True
                     
-                    # Clear query params and redirect (compatible with older Streamlit)
+                    # Clear query params and redirect
                     try:
                         st.query_params.clear()
                     except AttributeError:
@@ -198,7 +309,8 @@ def handle_oauth_flow(client_id: str, client_secret: str, redirect_uri: str):
                     st.success("✅ Authentication successful!")
                     st.rerun()
                 else:
-                    st.error(f"❌ Authentication failed: {response.text}")
+                    error_data = response.json() if response.headers.get('content-type') == 'application/json' else response.text
+                    st.error(f"❌ Authentication failed: {error_data}")
                     return None
         except Exception as e:
             st.error(f"❌ Error during authentication: {e}")
@@ -208,12 +320,15 @@ def handle_oauth_flow(client_id: str, client_secret: str, redirect_uri: str):
     st.markdown("""
     <div class="info-message">
         <h3>🔐 Google Authentication Required</h3>
-        <p>This AI agent needs access to your Google account to:</p>
+        <p>This AI agent needs secure access to your Google account to:</p>
         <ul>
-            <li><strong>📝 Create Forms:</strong> Generate forms directly in your Google account</li>
-            <li><strong>📁 Access Drive:</strong> Read your documents for AI conversion</li>
-            <li><strong>🤖 AI Processing:</strong> Use advanced AI to parse and create forms</li>
+            <li><strong>📝 Create Forms:</strong> Generate interactive forms directly in your Google account</li>
+            <li><strong>📁 Access Drive:</strong> Read and analyze your documents for AI conversion</li>
+            <li><strong>🤖 AI Processing:</strong> Use advanced AI to parse content and create intelligent forms</li>
+            <li><strong>☁️ Cloud Storage:</strong> Save and manage your forms in Google Drive</li>
+            <li><strong>🔄 Real-time Sync:</strong> Keep your forms updated across all devices</li>
         </ul>
+        <p><strong>🔒 Your data is secure:</strong> We only access what you explicitly authorize and never store your credentials.</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -280,29 +395,69 @@ def get_drive_service():
         st.error(f"Error creating Drive service: {e}")
         return None
 
-def list_drive_files(mime_types=None):
-    """List files from Google Drive."""
+def list_drive_files(mime_types=None, search_query=None):
+    """List files from Google Drive with enhanced filtering."""
     drive_service = get_drive_service()
     if not drive_service:
         return []
     
     try:
-        query = ""
+        query_parts = []
+        
+        # Add mime type filter
         if mime_types:
             mime_queries = [f"mimeType='{mime_type}'" for mime_type in mime_types]
-            query = " or ".join(mime_queries)
+            query_parts.append(f"({' or '.join(mime_queries)})")
+        
+        # Add search query filter
+        if search_query:
+            query_parts.append(f"name contains '{search_query}'")
+        
+        # Add file filters (not trashed, not folders)
+        query_parts.append("trashed=false")
+        query_parts.append("mimeType!='application/vnd.google-apps.folder'")
+        
+        query = " and ".join(query_parts)
         
         results = drive_service.files().list(
             q=query,
-            fields="files(id,name,mimeType,modifiedTime,size)",
+            fields="files(id,name,mimeType,modifiedTime,size,webViewLink,iconLink)",
             orderBy="modifiedTime desc",
-            pageSize=50
+            pageSize=100
         ).execute()
         
         return results.get('files', [])
     except Exception as e:
         st.error(f"Error listing Drive files: {e}")
         return []
+
+def get_file_content(file_id: str, mime_type: str):
+    """Download and return file content from Google Drive."""
+    drive_service = get_drive_service()
+    if not drive_service:
+        return None
+    
+    try:
+        # For Google Docs, export as plain text
+        if mime_type == 'application/vnd.google-apps.document':
+            request = drive_service.files().export_media(
+                fileId=file_id,
+                mimeType='text/plain'
+            )
+        else:
+            # For other files, download directly
+            request = drive_service.files().get_media(fileId=file_id)
+        
+        file_content = io.BytesIO()
+        downloader = MediaIoBaseDownload(file_content, request)
+        done = False
+        while done is False:
+            status, done = downloader.next_chunk()
+        
+        return file_content.getvalue()
+    except Exception as e:
+        st.error(f"Error downloading file: {e}")
+        return None
 
 def chat_with_agent(user_message: str):
     """Chat with the forms agent."""
@@ -336,14 +491,16 @@ def login_screen():
         st.markdown("""
         <div class="agent-card">
             <h3>🚀 AI-Powered Forms Management</h3>
-            <p>Transform your workflow with intelligent form creation:</p>
+            <p>Transform your workflow with cutting-edge intelligent form creation:</p>
             <ul>
-                <li><strong>📄 Document AI:</strong> Convert any document into interactive forms</li>
-                <li><strong>🤖 Smart Generation:</strong> Create forms from simple descriptions</li>
-                <li><strong>📝 Auto-Completion:</strong> AI fills in missing form elements</li>
-                <li><strong>☁️ Drive Integration:</strong> Direct access to your Google Drive files</li>
-                <li><strong>💬 Natural Chat:</strong> Talk to AI like a human assistant</li>
-                <li><strong>⚡ Instant Creation:</strong> Forms ready in seconds, not hours</li>
+                <li><strong>📄 Document AI:</strong> Convert any document into interactive forms instantly</li>
+                <li><strong>🤖 Smart Generation:</strong> Create sophisticated forms from simple descriptions</li>
+                <li><strong>📝 Auto-Completion:</strong> AI intelligently fills in missing form elements</li>
+                <li><strong>☁️ Drive Integration:</strong> Seamless access to your Google Drive ecosystem</li>
+                <li><strong>💬 Natural Chat:</strong> Converse with AI like your personal assistant</li>
+                <li><strong>⚡ Instant Creation:</strong> Professional forms ready in seconds, not hours</li>
+                <li><strong>🔄 Real-time Processing:</strong> Live document analysis and form generation</li>
+                <li><strong>🎯 Smart Suggestions:</strong> AI recommends optimal form structures</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -487,61 +644,129 @@ def show_drive_files():
         'application/msword',
         'text/plain',
         'text/markdown',
-        'application/vnd.google-apps.document'
+        'application/vnd.google-apps.document',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'application/vnd.google-apps.presentation'
     ]
     
-    col1, col2 = st.columns([3, 1])
+    # Control panel
+    col1, col2, col3 = st.columns([2, 1, 1])
+    with col1:
+        search_term = st.text_input("🔍 Search files:", placeholder="Enter filename...", key="file_search")
     with col2:
+        file_type_filter = st.selectbox("📄 Filter by type:", 
+                                       ["All", "Documents", "PDFs", "Google Docs"],
+                                       key="type_filter")
+    with col3:
         if st.button("🔄 Refresh", use_container_width=True):
             st.session_state.drive_files = []
             st.rerun()
     
+    # Apply file type filter
+    filtered_types = supported_types
+    if file_type_filter == "Documents":
+        filtered_types = ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword']
+    elif file_type_filter == "PDFs":
+        filtered_types = ['application/pdf']
+    elif file_type_filter == "Google Docs":
+        filtered_types = ['application/vnd.google-apps.document']
+    
     # Load files
-    if not st.session_state.drive_files:
+    cache_key = f"files_{file_type_filter}_{search_term}"
+    if cache_key not in st.session_state:
         with st.spinner("🔍 Scanning your Drive..."):
-            files = list_drive_files(supported_types)
-            st.session_state.drive_files = files
+            files = list_drive_files(filtered_types, search_term)
+            st.session_state[cache_key] = files
     else:
-        files = st.session_state.drive_files
+        files = st.session_state[cache_key]
     
     if not files:
-        st.info("📂 No supported documents found in your Drive.")
         st.markdown("""
-        **💡 Supported file types:**
-        - 📄 PDF files (.pdf)
-        - 📝 Word documents (.docx, .doc)
-        - 📃 Text files (.txt)
-        - 🔖 Markdown files (.md)
-        - 📊 Google Docs
-        """)
+        <div class="info-message">
+            <h4>📂 No documents found</h4>
+            <p><strong>💡 Supported file types:</strong></p>
+            <ul>
+                <li>📄 PDF files (.pdf)</li>
+                <li>📝 Word documents (.docx, .doc)</li>
+                <li>📃 Text files (.txt)</li>
+                <li>🔖 Markdown files (.md)</li>
+                <li>📊 Google Docs</li>
+                <li>📋 Google Slides</li>
+            </ul>
+            <p>Try adjusting your search or upload documents to Google Drive.</p>
+        </div>
+        """, unsafe_allow_html=True)
         return
     
-    st.success(f"📋 Found {len(files)} documents ready for AI processing")
+    st.markdown(f"""
+    <div class="success-message">
+        <h4>📋 Found {len(files)} documents ready for AI processing</h4>
+        <p>Select documents below to convert them into interactive Google Forms using AI.</p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # Search files
-    search_term = st.text_input("🔍 Search files:", placeholder="Enter filename...")
-    if search_term:
-        files = [f for f in files if search_term.lower() in f['name'].lower()]
-    
-    # Display files
+    # Display files in a grid
     for i, file in enumerate(files):
+        file_size = file.get('size', 'Unknown')
+        if file_size != 'Unknown' and file_size.isdigit():
+            file_size = f"{int(file_size) / 1024:.1f} KB" if int(file_size) < 1024*1024 else f"{int(file_size) / (1024*1024):.1f} MB"
+        
+        file_type_icon = "📄"
+        if 'pdf' in file['mimeType']:
+            file_type_icon = "📄"
+        elif 'document' in file['mimeType']:
+            file_type_icon = "📝"
+        elif 'presentation' in file['mimeType']:
+            file_type_icon = "📋"
+        elif 'google-apps' in file['mimeType']:
+            file_type_icon = "☁️"
+        
         with st.container():
             st.markdown(f"""
             <div class="file-card">
-                <h4>📄 {file['name']}</h4>
-                <p><strong>Type:</strong> {file['mimeType'].split('/')[-1].upper()}</p>
-                <p><strong>Modified:</strong> {file.get('modifiedTime', 'Unknown')[:10]}</p>
-                <p><strong>Size:</strong> {file.get('size', 'Unknown')} bytes</p>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4>{file_type_icon} {file['name']}</h4>
+                        <p><strong>Type:</strong> {file['mimeType'].split('/')[-1].upper().replace('VND.GOOGLE-APPS.', '')}</p>
+                        <p><strong>Modified:</strong> {file.get('modifiedTime', 'Unknown')[:10]} | <strong>Size:</strong> {file_size}</p>
+                    </div>
+                </div>
             </div>
             """, unsafe_allow_html=True)
             
-            col1, col2 = st.columns([3, 1])
+            col1, col2, col3 = st.columns([2, 1, 1])
             with col2:
+                if st.button(f"👁️ Preview", key=f"preview_{i}"):
+                    with st.expander(f"📖 Preview: {file['name']}", expanded=True):
+                        try:
+                            content = get_file_content(file['id'], file['mimeType'])
+                            if content:
+                                # Display first 500 characters
+                                preview_text = content.decode('utf-8', errors='ignore')[:500]
+                                st.text_area("Content preview:", preview_text, height=150, disabled=True)
+                            else:
+                                st.error("Could not load file content")
+                        except Exception as e:
+                            st.error(f"Preview error: {e}")
+            
+            with col3:
                 if st.button(f"🤖 Convert to Form", key=f"convert_{i}"):
-                    message = f"Please parse and convert the document '{file['name']}' (ID: {file['id']}) from my Google Drive into a Google Form. Extract all relevant questions and create an interactive form."
+                    message = f"""Please analyze and convert the document '{file['name']}' (ID: {file['id']}) from my Google Drive into a comprehensive Google Form. 
+
+Extract all relevant information and create appropriate form elements:
+- Convert questions into form fields
+- Create multiple choice options where applicable  
+- Add rating scales for evaluation items
+- Include text fields for open responses
+- Organize sections logically
+- Add proper form title and description
+
+Document Type: {file['mimeType']}
+File Name: {file['name']}"""
+                    
                     chat_with_agent(message)
                     st.success("✅ Conversion request sent to AI agent!")
-                    st.info("💬 Check the AI Assistant tab to see the response.")
+                    st.info("💬 Check the AI Assistant tab to monitor progress.")
 
 def show_quick_actions():
     """Show quick action buttons for common tasks."""
