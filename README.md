@@ -1,241 +1,237 @@
-# Google Forms Agent Pipeline
+# Google Forms Manager
 
-A comprehensive Google Forms management system built with Google ADK (Agent Development Kit) that can create, edit, validate, and manage Google Forms from documents or direct input.
+A comprehensive Google Forms management system with AI-powered agents and a modern web interface. Create, edit, organize, and manage Google Forms with advanced automation capabilities.
 
-## 🚀 Features
+## 🌟 Features
 
-- **Document Processing**: Parse PDF, DOCX, TXT, and MD files to extract form questions
-- **Form Creation**: Create Google Forms with intelligent auto-completion
-- **Form Editing**: Edit existing forms with batch operations
-- **Form Validation**: Validate form structures and auto-fix issues
-- **Service Account Integration**: Secure Google Forms API authentication
-- **Pipeline Architecture**: Modular subagent system for specialized tasks
-- **ADK Callback Optimizations**: Performance, caching, and monitoring capabilities
+### 🤖 AI-Powered Agents
+- **Document Parser Agent**: Extract form requirements from documents
+- **Form Creator Agent**: Automatically generate forms from specifications
+- **Form Editor Agent**: Modify existing forms with intelligent suggestions
+- **Form Validator Agent**: Validate forms for completeness and best practices
 
-## 📁 Project Structure
+### 🌐 Web Interface
+- **Modern Streamlit UI**: Beautiful, responsive web application
+- **Google OAuth Authentication**: Secure login with Google accounts
+- **Real-time Form Management**: Create, edit, and organize forms
+- **Analytics Dashboard**: View form statistics and usage metrics
+- **Folder Organization**: Organize forms in Google Drive folders
 
-```
-forms_agent/
-├── forms_agent/                    # Main agent package
-│   ├── agent.py                   # Root agent with subagent tools
-│   ├── service_account.json       # Google service account credentials
-│   └── subagents/                 # Specialized subagents
-│       ├── document_parser/       # Document parsing and extraction
-│       ├── form_creator/          # Form creation and configuration
-│       ├── form_editor/           # Form editing and management
-│       └── form_validator/        # Form validation and quality control
-├── google_forms_api.py            # Standalone Google Forms API client
-├── google_forms_tool.py           # Google ADK tool wrappers
-├── google_forms_agent.py          # Google ADK agent implementation
-├── requirements.txt               # Python dependencies
-└── README.md                     # This file
-```
+### 🔧 Advanced Capabilities
+- **Service Account Integration**: Automated form operations
+- **Google Drive Integration**: Seamless file management
+- **Batch Operations**: Process multiple forms efficiently
+- **Response Analysis**: View and analyze form responses
+- **Custom Question Types**: Support for all Google Forms question types
 
-## 🛠️ Installation
+## 🚀 Quick Start
 
-1. **Clone the repository**:
+### Prerequisites
+- Python 3.8+
+- Google Cloud Project with Forms API enabled
+- Google OAuth credentials (for web app)
+- Service account key (for automated operations)
+
+### Installation
+
+1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd forms_agent
+   git clone https://github.com/Sppdd/forms-agent.git
+   cd forms-agent
    ```
 
-2. **Install dependencies**:
+2. **Install dependencies**
    ```bash
    pip install -r requirements.txt
+   pip install -r requirements_streamlit.txt
    ```
 
-3. **Set up Google Service Account**:
-   - Create a Google Cloud Project
-   - Enable Google Forms API
-   - Create a service account
-   - Download the JSON credentials file as `service_account.json`
-   - Place it in the `forms_agent/` directory
+3. **Set up Google Cloud credentials**
+   - Place your service account JSON file in `forms_agent/service-account-key.json`
+   - Configure OAuth credentials for the web app (see deployment guide)
 
-4. **Configure environment**:
+4. **Configure Streamlit secrets**
    ```bash
-   # Set your Google API key (optional, for additional features)
-   export GOOGLE_API_KEY="your-api-key-here"
+   # Create .streamlit/secrets.toml
+   [auth]
+   redirect_uri = "http://localhost:8501/oauth2callback"
+   cookie_secret = "your-secure-cookie-secret"
+   client_id = "your-google-client-id"
+   client_secret = "your-google-client-secret"
+   server_metadata_url = "https://accounts.google.com/.well-known/openid-configuration"
+
+   [forms_agent]
+   service_account_path = "forms_agent/service-account-key.json"
    ```
 
-## 🎯 Quick Start
+### Running the Application
 
-### Using the Standalone API
+#### Web Interface (Recommended)
+```bash
+streamlit run streamlit_app.py
+```
+Visit `http://localhost:8501` and log in with your Google account.
+
+#### Command Line Interface
+```bash
+# Test service account
+python quick_form_access.py
+
+# Run forms management example
+python forms_drive_management_example.py
+```
+
+## 📖 Usage Guide
+
+### Web Interface
+
+1. **Authentication**: Log in with your Google account
+2. **My Forms**: View and manage all your forms
+3. **Create Form**: Build new forms with an intuitive interface
+4. **Organize**: Create folders and organize your forms
+5. **Analytics**: View form statistics and usage data
+
+### Programmatic Usage
 
 ```python
-from google_forms_api import GoogleFormsAPI
+from forms_agent.subagents.form_creator.tools import create_google_form, list_my_forms
+from forms_agent.subagents.form_editor.tools import update_form_info, get_form_responses
 
-# Initialize the API
-api = GoogleFormsAPI()
-
-# Create a form
-result = api.create_form(
-    title="My Test Form",
-    description="A test form created with the API"
+# Create a new form
+result = create_google_form(
+    title="Customer Feedback Survey",
+    description="Help us improve our services",
+    form_type="form"
 )
 
-if result["result"] == "success":
-    form_id = result["form_id"]
-    print(f"Form created: {result['form_url']}")
-```
+# List all forms
+forms = list_my_forms()
 
-### Using the ADK Agent
-
-```python
-from forms_agent.agent import root_agent
-
-# The agent is ready to use in your ADK workflows
-# It provides comprehensive form management capabilities
-```
-
-### Testing the Pipeline
-
-```bash
-# Test the service account
-python simple_test.py
-
-# Test the subagents
-python test_subagents.py
-
-# Test the standalone forms API
-python test_standalone_forms.py
-```
-
-## 🔧 Usage Examples
-
-### 1. Create a Form from Document
-
-```python
-# The agent can parse documents and create forms automatically
-# Upload a document and the agent will:
-# 1. Parse the document content
-# 2. Extract questions and structure
-# 3. Create a Google Form
-# 4. Add questions and configure settings
-```
-
-### 2. Edit Existing Forms
-
-```python
-# The agent can edit existing forms:
-# - Update titles and descriptions
-# - Add, modify, or delete questions
-# - Configure form settings
-# - Retrieve form responses
-```
-
-### 3. Validate Form Structure
-
-```python
-# The agent can validate forms:
-# - Check question types and compatibility
-# - Suggest improvements
-# - Auto-fix common issues
-# - Ensure Google Forms API compliance
+# Get form responses
+responses = get_form_responses("form_id_here")
 ```
 
 ## 🏗️ Architecture
 
-### Subagent System
-
-The project uses a modular subagent architecture:
-
-- **Document Parser Agent**: Handles document processing and content extraction
-- **Form Creator Agent**: Manages form creation and initial configuration
-- **Form Editor Agent**: Handles form editing and updates
-- **Form Validator Agent**: Validates form structure and quality
-
-### Service Account Integration
-
-The system uses Google service account authentication for secure API access:
-
-- Automatic authentication handling
-- Secure credential management
-- API rate limiting and error handling
-- Session state management
-
-### ADK Callback Optimizations
-
-The system includes comprehensive callback optimizations:
-
-- **Caching**: Automatic caching of LLM responses and tool results
-- **Validation**: Enhanced input validation and error recovery
-- **Monitoring**: Comprehensive performance monitoring and logging
-- **Safety**: Content filtering and guardrails
-- **Performance**: Optimized API calls and batch processing
-
-## 📊 Performance Features
-
-- **Caching**: 50-80% faster response times through intelligent caching
-- **Rate Limiting**: Prevents API overload and ensures reliable operation
-- **Error Recovery**: Automatic retry logic and graceful error handling
-- **Monitoring**: Real-time performance tracking and analytics
-- **Validation**: Input validation and data quality checks
-
-## 🔒 Security
-
-- **Service Account Authentication**: Secure Google API access
-- **Content Filtering**: Protection against sensitive data processing
-- **Input Validation**: Comprehensive input sanitization
-- **Error Handling**: Secure error messages without data leakage
-- **Rate Limiting**: Protection against API abuse
-
-## 🧪 Testing
-
-The project includes comprehensive test suites:
-
-- **Unit Tests**: Individual component testing
-- **Integration Tests**: End-to-end workflow testing
-- **Performance Tests**: Caching and optimization validation
-- **Security Tests**: Authentication and validation testing
-
-Run tests with:
-```bash
-python test_subagents.py
-python test_standalone_forms.py
-python simple_test.py
+### Agent System
+```
+forms_agent/
+├── agent.py                 # Main orchestrator agent
+├── optimized_agent.py       # Performance-optimized version
+└── subagents/
+    ├── document_parser/     # Extract requirements from docs
+    ├── form_creator/        # Generate new forms
+    ├── form_editor/         # Modify existing forms
+    └── form_validator/      # Validate form completeness
 ```
 
-## 📈 Monitoring and Analytics
+### Web Application
+```
+├── streamlit_app.py         # Main web application
+├── .streamlit/secrets.toml  # OAuth configuration
+├── Dockerfile              # Container configuration
+└── docker-compose.yml      # Multi-service deployment
+```
 
-The system provides comprehensive monitoring:
+## 🚀 Deployment
 
-- **Performance Metrics**: Response times and throughput
-- **Cache Analytics**: Hit rates and optimization effectiveness
-- **Error Tracking**: Error patterns and resolution
-- **API Usage**: Call frequency and optimization opportunities
+### Streamlit Community Cloud
+1. Push code to GitHub
+2. Connect repository to Streamlit Cloud
+3. Configure secrets in Streamlit Cloud dashboard
+4. Deploy
+
+### Docker Deployment
+```bash
+# Build and run with Docker Compose
+docker-compose up -d
+
+# Or build manually
+docker build -t forms-manager .
+docker run -p 8501:8080 forms-manager
+```
+
+### Google Cloud Run
+```bash
+gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/forms-manager
+gcloud run deploy forms-manager --image gcr.io/YOUR_PROJECT_ID/forms-manager
+```
+
+For detailed deployment instructions, see [deploy_guide.md](deploy_guide.md).
+
+## 🔐 Security
+
+- **OAuth 2.0 Authentication**: Secure Google account login
+- **Service Account Security**: Isolated credentials for automated operations
+- **HTTPS Enforcement**: All production deployments use SSL
+- **Rate Limiting**: Protection against abuse
+- **Input Validation**: Sanitized user inputs
+
+## 📊 API Reference
+
+### Form Creation
+```python
+create_google_form(title, description, form_type="form")
+add_questions_to_form(form_id, questions)
+setup_form_settings(form_id, settings)
+```
+
+### Form Management
+```python
+list_my_forms()
+get_form_details(form_id)
+update_form_info(form_id, updates)
+delete_form(form_id)
+```
+
+### Organization
+```python
+create_forms_folder(name, parent_folder_id=None)
+move_form_to_folder(form_id, folder_id)
+```
+
+### Responses
+```python
+get_form_responses(form_id)
+```
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests for new functionality
+4. Add tests if applicable
 5. Submit a pull request
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🆘 Support
 
-For support and questions:
+- **Documentation**: Check the guides in this repository
+- **Issues**: Report bugs on GitHub Issues
+- **Discussions**: Join GitHub Discussions for questions
 
-1. Check the documentation in the `README_standalone_forms.md` file
-2. Review the optimization guide in `ADK_CALLBACK_OPTIMIZATION_GUIDE.md`
-3. Test the examples in the test files
-4. Check the Google ADK documentation for callback usage
+## 🔄 Changelog
 
-## 🚀 Roadmap
+### v2.0.0 - Web Interface Release
+- ✨ Added Streamlit web application with OAuth
+- 🔐 Google OAuth authentication
+- 📱 Responsive web interface
+- 📊 Analytics dashboard
+- 🗂️ Folder organization features
 
-- [ ] Enhanced caching strategies
-- [ ] Advanced form templates
-- [ ] Batch form operations
-- [ ] Real-time collaboration features
-- [ ] Advanced analytics dashboard
-- [ ] Multi-language support
-- [ ] Mobile optimization
-- [ ] Advanced security features
+### v1.0.0 - Initial Release
+- 🤖 AI-powered form agents
+- 🔧 Service account integration
+- 📝 Form creation and editing
+- ✅ Form validation
+- 📄 Document parsing
 
----
+## 🙏 Acknowledgments
 
-**Built with Google ADK and Google Forms API** 
+- Google Forms API for form management capabilities
+- Streamlit for the web framework
+- Google Cloud Platform for hosting and authentication
+- The open-source community for various dependencies 

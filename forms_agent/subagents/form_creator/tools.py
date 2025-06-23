@@ -8,6 +8,7 @@ to create and configure powerful forms with advanced features.
 import os
 from typing import Any, Dict, List, Optional
 import json
+from datetime import datetime
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -28,14 +29,15 @@ except ImportError:
 # Scopes required for Google Forms API
 SCOPES = [
     'https://www.googleapis.com/auth/forms.body',
-    'https://www.googleapis.com/auth/drive.file'
+    'https://www.googleapis.com/auth/drive.file',
+    'https://www.googleapis.com/auth/drive'
 ]
 
 # Service account file path
 SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'service_account.json')
 
 
-def create_google_form(title: str, description: str, form_type: str = "form", tool_context: Optional[ToolContext] = None) -> Dict[str, Any]:
+def create_google_form(title: str, description: Optional[str] = None, form_type: str = "form", tool_context: Optional[ToolContext] = None) -> Dict[str, Any]:
     """
     Create a new Google Form with advanced configuration options.
     
@@ -45,7 +47,7 @@ def create_google_form(title: str, description: str, form_type: str = "form", to
     
     Args:
         title: The title for the new Google Form
-        description: The description for the form (will auto-generate if empty or generic)
+        description: The description for the form (will auto-generate if None or empty)
         form_type: Type of form to create ("form" or "quiz")
         
     Returns:
@@ -60,6 +62,10 @@ def create_google_form(title: str, description: str, form_type: str = "form", to
         - error_message: Present only if status is 'error'
     """
     try:
+        # Auto-generate description if not provided
+        if not description or description.strip() == "":
+            description = f"{form_type.title()} created automatically - {title}"
+        
         # Use standalone API if available, otherwise use direct API calls
         if USE_STANDALONE_API:
             return _create_form_with_standalone_api(title, description, form_type, tool_context)
@@ -118,19 +124,13 @@ def _create_form_with_standalone_api(title: str, description: str, form_type: st
 def _create_form_with_direct_api(title: str, description: str, form_type: str, tool_context: Optional[ToolContext] = None) -> Dict[str, Any]:
     """Create form using direct Google Forms API calls with advanced features."""
     try:
-        # Auto-generate description if not provided or too generic
-        if not description or description.strip() == "" or description.lower() in ["", "none", "form description"]:
-            description = f"{form_type.title()} created automatically - {title}"
-        
         # Get authenticated service
         service = _get_forms_service()
         
-        # Create form request with advanced configuration
+        # Create form request with only title (API limitation)
         form_request = {
             "info": {
-                "title": title,
-                "description": description,
-                "documentTitle": title
+                "title": title
             }
         }
         
@@ -141,26 +141,39 @@ def _create_form_with_direct_api(title: str, description: str, form_type: str, t
         form_url = f"https://docs.google.com/forms/d/{form_id}/edit"
         responder_url = result.get('responderUri')
         
+        # Use batchUpdate to add description and configure as quiz if needed
+        update_requests = []
+        
+        # Add description if provided
+        if description and description.strip():
+            update_requests.append({
+                "updateFormInfo": {
+                    "info": {
+                        "description": description
+                    },
+                    "updateMask": "description"
+                }
+            })
+        
         # Configure as quiz if specified
         if form_type.lower() == "quiz":
-            quiz_request = {
-                "requests": [
-                    {
-                        "updateSettings": {
-                            "settings": {
-                                "quizSettings": {
-                                    "isQuiz": True
-                                }
-                            },
-                            "updateMask": "quizSettings.isQuiz"
+            update_requests.append({
+                "updateSettings": {
+                    "settings": {
+                        "quizSettings": {
+                            "isQuiz": True
                         }
-                    }
-                ]
-            }
-            
+                    },
+                    "updateMask": "quizSettings.isQuiz"
+                }
+            })
+        
+        # Apply updates if any
+        if update_requests:
+            batch_request = {"requests": update_requests}
             service.forms().batchUpdate(
                 formId=form_id,
-                body=quiz_request
+                body=batch_request
             ).execute()
         
         # Store form info in session state if tool_context is available
@@ -865,7 +878,327 @@ def _format_section_for_api(section: Dict[str, Any]) -> Dict[str, Any]:
     if description:
         formatted_section["description"] = description
     
-    # Page break item - simplified structure
-    formatted_section["pageBreakItem"] = {}
+    # Add page break for section
+    formatted_section["pageBreakItem"] = {
+        "navigationType": section.get("navigation_type", "CONTINUE")
+    }
     
-    return formatted_section 
+    return formatted_section
+
+
+def list_my_forms(tool_context: Optional[ToolContext] = None) -> Dict[str, Any]:
+    """
+    List all Google Forms that you have access to.
+    
+    Use this tool when you need to see all the forms you've created or have access to.
+    This tool provides a comprehensive list with form details including titles, IDs,
+    creation dates, and URLs.
+    
+    Returns:
+        A dictionary containing form listing results with the following structure:
+        - status: 'success' or 'error'
+        - forms: List of form objects with details
+        - total_count: Total number of forms found
+        - message: Human-readable success message
+        - error_message: Present only if status is 'error'
+    """
+    try:
+        drive_service = _get_drive_service()
+        
+        # Search for Google Forms files
+        query = "mimeType='application/vnd.google-apps.form'"
+        results = drive_service.files().list(
+            q=query,
+            pageSize=100,
+            fields="files(id,name,createdTime,modifiedTime,owners,webViewLink,webContentLink)"
+        ).execute()
+        
+        forms = results.get('files', [])
+        
+        # Get additional form details using Forms API
+        forms_service = _get_forms_service()
+        detailed_forms = []
+        
+        for form in forms:
+            try:
+                form_details = forms_service.forms().get(formId=form['id']).execute()
+                detailed_form = {
+                    "form_id": form['id'],
+                    "title": form['name'],
+                    "created_time": form['createdTime'],
+                    "modified_time": form['modifiedTime'],
+                    "owners": [owner.get('emailAddress', '') for owner in form.get('owners', [])],
+                    "edit_url": f"https://docs.google.com/forms/d/{form['id']}/edit",
+                    "responder_url": form_details.get('responderUri', ''),
+                    "description": form_details.get('info', {}).get('description', ''),
+                    "is_quiz": form_details.get('settings', {}).get('quizSettings', {}).get('isQuiz', False),
+                    "item_count": len(form_details.get('items', [])),
+                    "web_view_link": form.get('webViewLink', '')
+                }
+                detailed_forms.append(detailed_form)
+            except Exception as e:
+                # If we can't get details for a specific form, include basic info
+                detailed_form = {
+                    "form_id": form['id'],
+                    "title": form['name'],
+                    "created_time": form['createdTime'],
+                    "modified_time": form['modifiedTime'],
+                    "owners": [owner.get('emailAddress', '') for owner in form.get('owners', [])],
+                    "edit_url": f"https://docs.google.com/forms/d/{form['id']}/edit",
+                    "note": f"Could not retrieve full details: {str(e)}"
+                }
+                detailed_forms.append(detailed_form)
+        
+        # Store forms list in session state if tool_context is available
+        if tool_context:
+            tool_context.state["my_forms"] = detailed_forms
+            tool_context.state["forms_count"] = len(detailed_forms)
+        
+        return {
+            "status": "success",
+            "forms": detailed_forms,
+            "total_count": len(detailed_forms),
+            "message": f"Found {len(detailed_forms)} forms"
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "error_message": f"Failed to list forms: {str(e)}",
+            "error_type": str(type(e).__name__)
+        }
+
+
+def move_form_to_folder(form_id: str, folder_id: str, tool_context: Optional[ToolContext] = None) -> Dict[str, Any]:
+    """
+    Move a Google Form to a specific folder in Google Drive.
+    
+    Use this tool when you want to organize your forms by moving them to specific
+    folders in Google Drive. This helps keep your forms organized and easily accessible.
+    
+    Args:
+        form_id: The Google Form ID to move
+        folder_id: The Google Drive folder ID to move the form to
+        
+    Returns:
+        A dictionary containing move results with the following structure:
+        - status: 'success' or 'error'
+        - form_id: The ID of the moved form
+        - folder_id: The ID of the destination folder
+        - message: Human-readable success message
+        - error_message: Present only if status is 'error'
+    """
+    try:
+        drive_service = _get_drive_service()
+        
+        # Move the form to the specified folder
+        file = drive_service.files().update(
+            fileId=form_id,
+            addParents=folder_id,
+            removeParents='root',  # Remove from root folder
+            fields='id, parents'
+        ).execute()
+        
+        # Store move info in session state if tool_context is available
+        if tool_context:
+            tool_context.state["moved_form_id"] = form_id
+            tool_context.state["destination_folder_id"] = folder_id
+            tool_context.state["move_timestamp"] = datetime.now().isoformat()
+        
+        return {
+            "status": "success",
+            "form_id": form_id,
+            "folder_id": folder_id,
+            "message": f"Successfully moved form {form_id} to folder {folder_id}"
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "error_message": f"Failed to move form: {str(e)}",
+            "error_type": str(type(e).__name__)
+        }
+
+
+def create_forms_folder(folder_name: str, parent_folder_id: Optional[str] = None, tool_context: Optional[ToolContext] = None) -> Dict[str, Any]:
+    """
+    Create a new folder in Google Drive for organizing forms.
+    
+    Use this tool when you want to create a dedicated folder to organize your
+    Google Forms. This helps keep your forms organized and easily accessible.
+    
+    Args:
+        folder_name: The name for the new folder
+        parent_folder_id: The ID of the parent folder (optional, defaults to root)
+        
+    Returns:
+        A dictionary containing folder creation results with the following structure:
+        - status: 'success' or 'error'
+        - folder_id: The ID of the created folder
+        - folder_name: The name of the created folder
+        - folder_url: The URL to access the folder
+        - message: Human-readable success message
+        - error_message: Present only if status is 'error'
+    """
+    try:
+        drive_service = _get_drive_service()
+        
+        # Prepare folder metadata
+        folder_metadata = {
+            'name': folder_name,
+            'mimeType': 'application/vnd.google-apps.folder'
+        }
+        
+        # Add parent folder if specified
+        if parent_folder_id:
+            folder_metadata['parents'] = [parent_folder_id]
+        
+        # Create the folder
+        folder = drive_service.files().create(
+            body=folder_metadata,
+            fields='id,name,webViewLink'
+        ).execute()
+        
+        folder_id = folder.get('id')
+        folder_url = folder.get('webViewLink')
+        
+        # Store folder info in session state if tool_context is available
+        if tool_context:
+            tool_context.state["created_folder_id"] = folder_id
+            tool_context.state["created_folder_name"] = folder_name
+            tool_context.state["folder_creation_time"] = datetime.now().isoformat()
+        
+        return {
+            "status": "success",
+            "folder_id": folder_id,
+            "folder_name": folder_name,
+            "folder_url": folder_url,
+            "message": f"Successfully created folder '{folder_name}' with ID {folder_id}"
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "error_message": f"Failed to create folder: {str(e)}",
+            "error_type": str(type(e).__name__)
+        }
+
+
+def get_form_details(form_id: str, tool_context: Optional[ToolContext] = None) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific Google Form.
+    
+    Use this tool when you need comprehensive information about a specific form
+    including its structure, questions, settings, and metadata.
+    
+    Args:
+        form_id: The Google Form ID to get details for
+        
+    Returns:
+        A dictionary containing form details with the following structure:
+        - status: 'success' or 'error'
+        - form_id: The ID of the form
+        - form_info: Complete form information including title, description, settings
+        - questions: List of all questions in the form
+        - item_count: Number of items in the form
+        - is_quiz: Whether the form is a quiz
+        - created_time: When the form was created
+        - modified_time: When the form was last modified
+        - edit_url: URL to edit the form
+        - responder_url: URL for form responders
+        - error_message: Present only if status is 'error'
+    """
+    try:
+        forms_service = _get_forms_service()
+        drive_service = _get_drive_service()
+        
+        # Get form details from Forms API
+        form_details = forms_service.forms().get(formId=form_id).execute()
+        
+        # Get file metadata from Drive API
+        file_metadata = drive_service.files().get(
+            fileId=form_id,
+            fields='id,name,createdTime,modifiedTime,owners,webViewLink'
+        ).execute()
+        
+        # Process questions/items
+        items = form_details.get('items', [])
+        questions = []
+        
+        for item in items:
+            question_info = {
+                "item_id": item.get('itemId'),
+                "title": item.get('title'),
+                "type": None
+            }
+            
+            # Determine item type
+            if 'questionItem' in item:
+                question = item['questionItem'].get('question', {})
+                if 'choiceQuestion' in question:
+                    choice_type = question['choiceQuestion'].get('type', '')
+                    if choice_type == 'RADIO':
+                        question_info["type"] = "multiple_choice"
+                    elif choice_type == 'CHECKBOX':
+                        question_info["type"] = "checkbox"
+                elif 'textQuestion' in question:
+                    question_info["type"] = "text"
+                elif 'dateQuestion' in question:
+                    question_info["type"] = "date"
+                elif 'timeQuestion' in question:
+                    question_info["type"] = "time"
+                elif 'fileUploadQuestion' in question:
+                    question_info["type"] = "file_upload"
+                elif 'scaleQuestion' in question:
+                    question_info["type"] = "linear_scale"
+                elif 'gridQuestion' in question:
+                    question_info["type"] = "grid"
+            elif 'imageItem' in item:
+                question_info["type"] = "image"
+            elif 'videoItem' in item:
+                question_info["type"] = "video"
+            elif 'pageBreakItem' in item:
+                question_info["type"] = "page_break"
+            elif 'sectionHeaderItem' in item:
+                question_info["type"] = "section_header"
+            
+            questions.append(question_info)
+        
+        # Store form details in session state if tool_context is available
+        if tool_context:
+            tool_context.state["current_form_details"] = form_details
+            tool_context.state["current_form_questions"] = questions
+        
+        return {
+            "status": "success",
+            "form_id": form_id,
+            "form_info": form_details.get('info', {}),
+            "questions": questions,
+            "item_count": len(items),
+            "is_quiz": form_details.get('settings', {}).get('quizSettings', {}).get('isQuiz', False),
+            "created_time": file_metadata.get('createdTime'),
+            "modified_time": file_metadata.get('modifiedTime'),
+            "edit_url": f"https://docs.google.com/forms/d/{form_id}/edit",
+            "responder_url": form_details.get('responderUri', ''),
+            "owners": [owner.get('emailAddress', '') for owner in file_metadata.get('owners', [])],
+            "message": f"Retrieved details for form: {form_details.get('info', {}).get('title', 'Untitled')}"
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "error_message": f"Failed to get form details: {str(e)}",
+            "error_type": str(type(e).__name__)
+        }
+
+
+def _get_drive_service():
+    """Get authenticated Google Drive service."""
+    try:
+        credentials = service_account.Credentials.from_service_account_file(
+            SERVICE_ACCOUNT_FILE, scopes=SCOPES
+        )
+        service = build('drive', 'v3', credentials=credentials)
+        return service
+    except Exception as e:
+        raise Exception(f"Failed to authenticate with Google Drive API: {str(e)}") 

@@ -252,11 +252,11 @@ def before_tool_callback(tool: BaseTool, args: Dict[str, Any], tool_context: Too
     
     # Validate tool arguments
     if tool_name == "create_google_form":
-        if not args.get("title") or not args.get("description"):
-            logger.warning(f"[CALLBACK] Missing required arguments for {tool_name}")
+        if not args.get("title"):
+            logger.warning(f"[CALLBACK] Missing required title argument for {tool_name}")
             return {
                 "result": "error",
-                "message": "Title and description are required for form creation"
+                "message": "Title is required for form creation"
             }
     
     # Check for cached tool results
