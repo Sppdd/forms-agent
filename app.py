@@ -172,8 +172,7 @@ def show_navigation():
         pages = {
             "🏠 Home": "home",
             "💬 Chat": "agent",
-            "📁 Files": "files", 
-            "⚡ Quick Start": "actions"
+            "📁 Files": "files"
         }
         
         for page_name, page_key in pages.items():
@@ -235,8 +234,16 @@ def handle_oauth_flow(client_id: str, client_secret: str, redirect_uri: str):
     
     # Check for OAuth errors
     if "error" in query_params:
-        error = query_params["error"][0] if isinstance(query_params["error"], list) else query_params["error"]
-        st.error(f"Authentication failed: {error}")
+        error = query_params.get("error", ["Unknown"])[0]
+        error_description = query_params.get("error_description", ["No description provided."])[0]
+        st.error(f"Authentication Failed: {error}")
+        st.error(f"Details: {error_description}")
+
+        if error == "redirect_uri_mismatch":
+            st.error("This is a common error. It means the `redirect_uri` in your app's secrets doesn't match the one in your Google Cloud project.")
+            st.info(f"Your app is configured with this redirect URI: `{redirect_uri}`")
+            st.info("Please go to your [Google Cloud Console Credentials](https://console.cloud.google.com/apis/credentials) and ensure that this URI is listed under 'Authorized redirect URIs' for your OAuth 2.0 Client ID.")
+        
         return None
     
     if "code" in query_params:
@@ -458,15 +465,6 @@ def main_app():
             if st.button("Go to sign in"):
                 st.session_state.current_page = 'home'
                 st.rerun()
-                
-    elif current_page == 'actions':
-        if st.session_state.authenticated:
-            show_quick_actions()
-        else:
-            st.warning("Please sign in first to access quick actions")
-            if st.button("Go to sign in"):
-                st.session_state.current_page = 'home'
-                st.rerun()
     else:
         st.session_state.current_page = 'home'
         st.rerun()
@@ -497,45 +495,47 @@ def show_agent_chat():
     else:
         st.info("Ask me to create forms, parse documents, or help with Google Forms.")
     
-    # Quick buttons
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("Create Survey", use_container_width=True):
-            message = "Create a customer satisfaction survey form"
-            chat_with_agent(message)
-            st.rerun()
-    
-    with col2:
-        if st.button("Parse Document", use_container_width=True):
-            message = "Help me convert a document to a form"
-            chat_with_agent(message)
-            st.rerun()
-    
-    with col3:
-        if st.button("List Forms", use_container_width=True):
-            message = "Show me my Google Forms"
-            chat_with_agent(message)
-            st.rerun()
-    
     # Chat input
     user_input = st.text_area(
         "Message:",
-        placeholder="Type your message here...",
+        placeholder="Type your message here, or try an example below.",
         height=100,
         key="chat_input"
     )
     
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        if st.button("Send", type="primary", disabled=not user_input):
-            if user_input:
-                chat_with_agent(user_input)
-                st.rerun()
-    
-    with col2:
-        if st.button("Clear"):
-            st.session_state.chat_history = []
+    if st.button("Send", type="primary", disabled=not user_input):
+        if user_input:
+            chat_with_agent(user_input)
             st.rerun()
+
+    st.markdown("---")
+    st.markdown("##### Or try an example:")
+    
+    templates = [
+        {
+            "title": "Customer Survey",
+            "prompt": "Create a customer satisfaction survey with rating questions and feedback"
+        },
+        {
+            "title": "Event Registration",
+            "prompt": "Create an event registration form with personal info and preferences"
+        },
+        {
+            "title": "Quiz",
+            "prompt": "Create a quiz with multiple choice questions and scoring"
+        },
+        {
+            "title": "Job Application",
+            "prompt": "Create a job application form with experience and skills sections"
+        }
+    ]
+    
+    col1, col2 = st.columns(2)
+    for i, template in enumerate(templates):
+        with col1 if i % 2 == 0 else col2:
+            if st.button(template["title"], use_container_width=True, key=f"template_{i}"):
+                chat_with_agent(template["prompt"])
+                st.rerun()
 
 def show_drive_files():
     """Show Google Drive files."""
