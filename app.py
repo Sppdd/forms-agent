@@ -147,47 +147,19 @@ def get_oauth_credentials():
 
 def handle_oauth_flow(client_id: str, client_secret: str, redirect_uri: str):
     """Handle OAuth flow for Google authentication."""
-    st.markdown("""
-    <div class="info-message">
-        <h3>🔐 Google Authentication Required</h3>
-        <p>This AI agent needs access to your Google account to:</p>
-        <ul>
-            <li><strong>📝 Create Forms:</strong> Generate forms directly in your Google account</li>
-            <li><strong>📁 Access Drive:</strong> Read your documents for AI conversion</li>
-            <li><strong>🤖 AI Processing:</strong> Use advanced AI to parse and create forms</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
     
-    # Create OAuth URL
-    scope_param = '+'.join(SCOPES)
-    auth_url = f"https://accounts.google.com/o/oauth2/auth?client_id={client_id}&redirect_uri={redirect_uri}&scope={scope_param}&response_type=code&access_type=offline&prompt=consent"
+    # Check for OAuth callback parameters (compatible with older Streamlit versions)
+    try:
+        query_params = st.query_params
+    except AttributeError:
+        query_params = st.experimental_get_query_params()
     
-    st.markdown(f"""
-    <div class="info-message">
-        <h4>📋 Quick Setup:</h4>
-        <ol>
-            <li>Click the authorization link below</li>
-            <li>Sign in to your Google account</li>
-            <li>Grant permissions for Forms and Drive</li>
-            <li>Copy the authorization code</li>
-            <li>Paste it here and click "Authenticate"</li>
-        </ol>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown(f"[🔗 **Authorize Google Forms Agent**]({auth_url})")
-    
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        auth_code = st.text_input("Enter the authorization code:", type="password", key="auth_code")
-    
-    with col2:
-        auth_button = st.button("🚀 Authenticate", type="primary")
-    
-    if auth_code and auth_button:
+    if "code" in query_params:
+        # Handle OAuth callback
+        auth_code = query_params["code"][0] if isinstance(query_params["code"], list) else query_params["code"]
+        
         try:
-            with st.spinner("🔄 Authenticating..."):
+            with st.spinner("🔄 Completing authentication..."):
                 # Exchange code for tokens
                 token_url = "https://oauth2.googleapis.com/token"
                 token_data = {
@@ -216,12 +188,73 @@ def handle_oauth_flow(client_id: str, client_secret: str, redirect_uri: str):
                     st.session_state.credentials = credentials
                     st.session_state.user_info = user_info
                     st.session_state.authenticated = True
+                    
+                    # Clear query params and redirect (compatible with older Streamlit)
+                    try:
+                        st.query_params.clear()
+                    except AttributeError:
+                        st.experimental_set_query_params()
+                    
                     st.success("✅ Authentication successful!")
                     st.rerun()
                 else:
                     st.error(f"❌ Authentication failed: {response.text}")
+                    return None
         except Exception as e:
             st.error(f"❌ Error during authentication: {e}")
+            return None
+    
+    # Show login screen
+    st.markdown("""
+    <div class="info-message">
+        <h3>🔐 Google Authentication Required</h3>
+        <p>This AI agent needs access to your Google account to:</p>
+        <ul>
+            <li><strong>📝 Create Forms:</strong> Generate forms directly in your Google account</li>
+            <li><strong>📁 Access Drive:</strong> Read your documents for AI conversion</li>
+            <li><strong>🤖 AI Processing:</strong> Use advanced AI to parse and create forms</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Create OAuth URL
+    import urllib.parse
+    scope_param = urllib.parse.quote(' '.join(SCOPES))
+    auth_url = f"https://accounts.google.com/o/oauth2/auth?client_id={client_id}&redirect_uri={urllib.parse.quote(redirect_uri)}&scope={scope_param}&response_type=code&access_type=offline&prompt=consent"
+    
+    st.markdown(f"""
+    <div class="info-message">
+        <h4>📋 Quick Setup:</h4>
+        <ol>
+            <li>Click the "Authorize" button below</li>
+            <li>Sign in to your Google account</li>
+            <li>Grant permissions for Forms and Drive</li>
+            <li>You'll be automatically redirected back</li>
+        </ol>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Direct link button
+    st.markdown(f"""
+    <div style="text-align: center; margin: 2rem 0;">
+        <a href="{auth_url}" target="_self">
+            <button style="
+                background: linear-gradient(90deg, #1f77b4, #28a745);
+                color: white;
+                padding: 12px 24px;
+                border: none;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: bold;
+                text-decoration: none;
+                cursor: pointer;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            ">
+                🔗 Authorize Google Forms Agent
+            </button>
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
     
     return None
 
