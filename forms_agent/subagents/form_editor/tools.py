@@ -30,14 +30,24 @@ def update_form_info(form_id: str, title: str, description: str, tool_context: O
     """
     Update form title and/or description.
     
+    Use this tool when you need to modify the basic information of an existing Google Form.
+    This tool allows you to update the form's title and description while preserving all
+    existing questions and settings.
+    
     Args:
-        form_id: The Google Form ID
+        form_id: The Google Form ID to update
         title: New form title (will auto-generate if empty or generic)
         description: New form description (will auto-generate if empty or generic)
-        tool_context: Context for accessing session state
         
     Returns:
-        Dict containing update results
+        A dictionary containing update results with the following structure:
+        - status: 'success' or 'error'
+        - form_id: The ID of the updated form
+        - updated_title: The new title that was applied
+        - updated_description: The new description that was applied
+        - update_result: The raw API response from Google Forms
+        - message: Human-readable success message
+        - error_message: Present only if status is 'error'
     """
     try:
         # Auto-generate title if not provided or too generic
@@ -69,7 +79,7 @@ def update_form_info(form_id: str, title: str, description: str, tool_context: O
             body=batch_request
         ).execute()
         
-        # Store updated info in session
+        # Store updated info in session state if tool_context is available
         if tool_context:
             tool_context.state["last_form_update"] = {
                 "form_id": form_id,
@@ -78,7 +88,7 @@ def update_form_info(form_id: str, title: str, description: str, tool_context: O
             }
         
         return {
-            "result": "success",
+            "status": "success",
             "form_id": form_id,
             "updated_title": title,
             "updated_description": description,
@@ -89,15 +99,15 @@ def update_form_info(form_id: str, title: str, description: str, tool_context: O
     except HttpError as e:
         error_details = json.loads(e.content.decode())
         return {
-            "result": "error",
-            "message": f"Failed to update form: {error_details.get('error', {}).get('message', str(e))}",
+            "status": "error",
+            "error_message": f"Failed to update form: {error_details.get('error', {}).get('message', str(e))}",
             "error_code": e.resp.status,
             "error_type": "HttpError"
         }
     except Exception as e:
         return {
-            "result": "error",
-            "message": f"Failed to update form info: {str(e)}",
+            "status": "error",
+            "error_message": f"Failed to update form info: {str(e)}",
             "error_type": str(type(e).__name__)
         }
 
@@ -106,13 +116,22 @@ def modify_questions(form_id: str, modifications: List[Dict[str, Any]], tool_con
     """
     Modify questions in the form (add, edit, delete).
     
+    Use this tool when you need to make changes to questions in an existing Google Form.
+    This tool supports adding new questions, updating existing questions, and deleting
+    questions from the form.
+    
     Args:
-        form_id: The Google Form ID
-        modifications: List of modification operations
-        tool_context: Context for accessing session state
+        form_id: The Google Form ID to modify
+        modifications: List of modification operations (add, update, delete)
         
     Returns:
-        Dict containing modification results
+        A dictionary containing modification results with the following structure:
+        - status: 'success' or 'error'
+        - form_id: The ID of the modified form
+        - modifications_applied: Number of modifications successfully applied
+        - modification_result: The raw API response from Google Forms
+        - message: Human-readable success message
+        - error_message: Present only if status is 'error'
     """
     try:
         service = _get_forms_service()
@@ -158,8 +177,8 @@ def modify_questions(form_id: str, modifications: List[Dict[str, Any]], tool_con
         
         if not requests:
             return {
-                "result": "error",
-                "message": "No modifications specified."
+                "status": "error",
+                "error_message": "No modifications specified."
             }
         
         # Apply modifications
@@ -169,7 +188,7 @@ def modify_questions(form_id: str, modifications: List[Dict[str, Any]], tool_con
             body=batch_request
         ).execute()
         
-        # Store modification info in session
+        # Store modification info in session state if tool_context is available
         if tool_context:
             tool_context.state["last_form_modifications"] = {
                 "form_id": form_id,
@@ -178,7 +197,7 @@ def modify_questions(form_id: str, modifications: List[Dict[str, Any]], tool_con
             }
         
         return {
-            "result": "success",
+            "status": "success",
             "form_id": form_id,
             "modifications_applied": len(modifications),
             "modification_result": result,
@@ -188,220 +207,299 @@ def modify_questions(form_id: str, modifications: List[Dict[str, Any]], tool_con
     except HttpError as e:
         error_details = json.loads(e.content.decode())
         return {
-            "result": "error",
-            "message": f"Failed to modify questions: {error_details.get('error', {}).get('message', str(e))}",
+            "status": "error",
+            "error_message": f"Failed to modify questions: {error_details.get('error', {}).get('message', str(e))}",
             "error_code": e.resp.status,
             "error_type": "HttpError"
         }
     except Exception as e:
         return {
-            "result": "error",
-            "message": f"Failed to modify questions: {str(e)}",
+            "status": "error",
+            "error_message": f"Failed to modify questions: {str(e)}",
             "error_type": str(type(e).__name__)
         }
 
 
 def delete_form(form_id: str, tool_context: Optional[ToolContext] = None) -> Dict[str, Any]:
     """
-    Delete a Google Form permanently.
+    Delete a Google Form and its associated responses.
+    
+    Use this tool when you need to permanently remove a Google Form and all its data.
+    This action cannot be undone, so use with caution.
     
     Args:
         form_id: The Google Form ID to delete
-        tool_context: Context for accessing session state
         
     Returns:
-        Dict containing deletion results
+        A dictionary containing deletion results with the following structure:
+        - status: 'success' or 'error'
+        - form_id: The ID of the deleted form
+        - message: Human-readable success message
+        - error_message: Present only if status is 'error'
     """
     try:
-        # Note: Google Forms API doesn't have a direct delete method
-        # We need to use the Drive API to delete the form file
-        from googleapiclient.discovery import build
-        
-        # Get Drive service (forms are stored as Drive files)
+        service = _get_forms_service()
         drive_service = _get_drive_service()
         
-        # Delete the form file
-        drive_service.files().delete(fileId=form_id).execute()
-        
-        # Store deletion info in session
-        if tool_context:
-            tool_context.state["last_form_deletion"] = {
+        # Delete the form file from Google Drive
+        try:
+            drive_service.files().delete(fileId=form_id).execute()
+            
+            # Store deletion info in session state if tool_context is available
+            if tool_context:
+                tool_context.state["deleted_form_id"] = form_id
+                tool_context.state["deletion_timestamp"] = datetime.now().isoformat()
+            
+            return {
+                "status": "success",
                 "form_id": form_id,
-                "deleted_at": str(datetime.now())
+                "message": f"Successfully deleted form {form_id}"
             }
-        
-        return {
-            "result": "success",
-            "form_id": form_id,
-            "message": f"Successfully deleted form {form_id}",
-            "warning": "This action is permanent and cannot be undone."
-        }
+            
+        except HttpError as e:
+            if e.resp.status == 404:
+                return {
+                    "status": "success",
+                    "form_id": form_id,
+                    "message": f"Form {form_id} was already deleted or does not exist"
+                }
+            else:
+                raise e
         
     except HttpError as e:
         error_details = json.loads(e.content.decode())
         return {
-            "result": "error",
-            "message": f"Failed to delete form: {error_details.get('error', {}).get('message', str(e))}",
+            "status": "error",
+            "error_message": f"Failed to delete form: {error_details.get('error', {}).get('message', str(e))}",
             "error_code": e.resp.status,
             "error_type": "HttpError"
         }
     except Exception as e:
         return {
-            "result": "error",
-            "message": f"Failed to delete form: {str(e)}",
+            "status": "error",
+            "error_message": f"Failed to delete form: {str(e)}",
             "error_type": str(type(e).__name__)
         }
 
 
 def get_form_responses(form_id: str, tool_context: Optional[ToolContext] = None) -> Dict[str, Any]:
     """
-    Get responses from a Google Form.
+    Retrieve responses from a Google Form.
+    
+    Use this tool when you need to access the responses submitted to a Google Form.
+    This tool fetches all responses and provides them in a structured format for analysis.
     
     Args:
-        form_id: The Google Form ID
-        tool_context: Context for accessing session state
+        form_id: The Google Form ID to get responses from
         
     Returns:
-        Dict containing form responses
+        A dictionary containing response data with the following structure:
+        - status: 'success' or 'error'
+        - form_id: The ID of the form
+        - responses: List of response objects with answers and metadata
+        - response_count: Number of responses retrieved
+        - form_info: Basic information about the form
+        - error_message: Present only if status is 'error'
     """
     try:
         service = _get_forms_service()
         
-        # Get form responses
-        result = service.forms().responses().list(formId=form_id).execute()
+        # Get form information
+        form_info = service.forms().get(formId=form_id).execute()
         
-        responses = result.get('responses', [])
+        # Get responses
+        responses_result = service.forms().responses().list(formId=form_id).execute()
+        responses = responses_result.get('responses', [])
         
-        # Process responses for easier use
+        # Process responses to extract answers
         processed_responses = []
         for response in responses:
-            processed_response = {
+            response_data = {
                 "response_id": response.get('responseId'),
-                "create_time": response.get('createTime'),
+                "created_time": response.get('createdTime'),
                 "last_submitted_time": response.get('lastSubmittedTime'),
                 "answers": {}
             }
             
-            # Process answers
+            # Extract answers for each question
             answers = response.get('answers', {})
             for question_id, answer_data in answers.items():
-                processed_response["answers"][question_id] = answer_data
+                question_info = form_info.get('items', [])
+                question_title = f"Question_{question_id}"
+                
+                # Find question title
+                for item in question_info:
+                    if item.get('itemId') == question_id:
+                        question_title = item.get('title', f"Question_{question_id}")
+                        break
+                
+                # Extract answer value
+                answer_value = None
+                if 'textAnswers' in answer_data:
+                    answer_value = [ans.get('value', '') for ans in answer_data['textAnswers'].get('answers', [])]
+                elif 'choiceAnswers' in answer_data:
+                    answer_value = [ans.get('value', '') for ans in answer_data['choiceAnswers'].get('answers', [])]
+                elif 'fileUploadAnswers' in answer_data:
+                    answer_value = [ans.get('fileId', '') for ans in answer_data['fileUploadAnswers'].get('answers', [])]
+                
+                response_data["answers"][question_title] = answer_value
             
-            processed_responses.append(processed_response)
+            processed_responses.append(response_data)
         
-        # Store responses in session
+        # Store responses in session state if tool_context is available
         if tool_context:
-            tool_context.state["form_responses"] = {
-                "form_id": form_id,
-                "response_count": len(processed_responses),
-                "responses": processed_responses
-            }
+            tool_context.state["form_responses"] = processed_responses
+            tool_context.state["response_count"] = len(processed_responses)
         
         return {
-            "result": "success",
+            "status": "success",
             "form_id": form_id,
-            "response_count": len(processed_responses),
             "responses": processed_responses,
-            "message": f"Retrieved {len(processed_responses)} responses from form {form_id}"
+            "response_count": len(processed_responses),
+            "form_info": {
+                "title": form_info.get('info', {}).get('title'),
+                "description": form_info.get('info', {}).get('description'),
+                "question_count": len(form_info.get('items', []))
+            }
         }
         
     except HttpError as e:
         error_details = json.loads(e.content.decode())
         return {
-            "result": "error",
-            "message": f"Failed to get responses: {error_details.get('error', {}).get('message', str(e))}",
+            "status": "error",
+            "error_message": f"Failed to get responses: {error_details.get('error', {}).get('message', str(e))}",
             "error_code": e.resp.status,
             "error_type": "HttpError"
         }
     except Exception as e:
         return {
-            "result": "error",
-            "message": f"Failed to get form responses: {str(e)}",
+            "status": "error",
+            "error_message": f"Failed to get form responses: {str(e)}",
             "error_type": str(type(e).__name__)
         }
 
 
 def _get_forms_service():
     """Get authenticated Google Forms service."""
-    from google.oauth2 import service_account
-    
-    # Load service account credentials with correct path
-    service_account_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'service_account.json')
-    credentials = service_account.Credentials.from_service_account_file(
-        service_account_path, scopes=SCOPES
-    )
-    
-    service = build('forms', 'v1', credentials=credentials)
-    return service
+    try:
+        from google.oauth2 import service_account
+        SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'service_account.json')
+        
+        credentials = service_account.Credentials.from_service_account_file(
+            SERVICE_ACCOUNT_FILE, scopes=SCOPES
+        )
+        service = build('forms', 'v1', credentials=credentials)
+        return service
+    except Exception as e:
+        raise Exception(f"Failed to authenticate with Google Forms API: {str(e)}")
 
 
 def _get_drive_service():
     """Get authenticated Google Drive service."""
-    from google.oauth2 import service_account
-    
-    # Load service account credentials with correct path
-    service_account_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'service_account.json')
-    credentials = service_account.Credentials.from_service_account_file(
-        service_account_path, scopes=['https://www.googleapis.com/auth/drive.file']
-    )
-    
-    service = build('drive', 'v3', credentials=credentials)
-    return service
+    try:
+        from google.oauth2 import service_account
+        SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'service_account.json')
+        
+        credentials = service_account.Credentials.from_service_account_file(
+            SERVICE_ACCOUNT_FILE, scopes=SCOPES
+        )
+        service = build('drive', 'v3', credentials=credentials)
+        return service
+    except Exception as e:
+        raise Exception(f"Failed to authenticate with Google Drive API: {str(e)}")
 
 
 def _format_question_for_api(question: Dict[str, Any]) -> Dict[str, Any]:
-    """Format question data for Google Forms API."""
-    question_type = question.get("type", "short_answer")
+    """Convert question data to Google Forms API format."""
+    question_type = question.get("type", "").lower()
     question_text = question.get("question", "")
     required = question.get("required", False)
     
-    # Map question types to Google Forms API format
-    type_mapping = {
-        "multiple_choice": "MULTIPLE_CHOICE",
-        "short_answer": "SHORT_ANSWER",
-        "long_answer": "PARAGRAPH",
-        "checkbox": "CHECKBOX",
-        "dropdown": "DROP_DOWN",
-        "linear_scale": "LINEAR_SCALE",
-        "date": "DATE",
-        "time": "TIME"
-    }
-    
-    api_type = type_mapping.get(question_type, "SHORT_ANSWER")
-    
+    # Base question structure
     formatted_question = {
         "title": question_text,
-        "questionItem": {
-            "question": {
-                "required": required
-            }
-        }
+        "questionId": f"question_{hash(question_text) % 1000000}"
     }
     
-    # Add question-specific formatting
-    if api_type == "MULTIPLE_CHOICE":
+    # Add question type-specific configuration
+    if question_type == "multiple_choice":
         options = question.get("options", [])
-        formatted_question["questionItem"]["question"]["choiceQuestion"] = {
-            "type": "RADIO",
-            "options": [{"value": option} for option in options]
+        formatted_question["question"] = {
+            "questionId": formatted_question["questionId"],
+            "required": required,
+            "choiceQuestion": {
+                "type": "RADIO",
+                "options": [{"value": str(option)} for option in options],
+                "shuffle": False
+            }
         }
-    elif api_type == "CHECKBOX":
+    
+    elif question_type == "checkbox":
         options = question.get("options", [])
-        formatted_question["questionItem"]["question"]["choiceQuestion"] = {
-            "type": "CHECKBOX",
-            "options": [{"value": option} for option in options]
+        formatted_question["question"] = {
+            "questionId": formatted_question["questionId"],
+            "required": required,
+            "choiceQuestion": {
+                "type": "CHECKBOX",
+                "options": [{"value": str(option)} for option in options],
+                "shuffle": False
+            }
         }
-    elif api_type == "SHORT_ANSWER":
-        formatted_question["questionItem"]["question"]["textQuestion"] = {}
-    elif api_type == "PARAGRAPH":
-        formatted_question["questionItem"]["question"]["textQuestion"] = {
-            "paragraph": True
+    
+    elif question_type == "dropdown":
+        options = question.get("options", [])
+        formatted_question["question"] = {
+            "questionId": formatted_question["questionId"],
+            "required": required,
+            "choiceQuestion": {
+                "type": "DROP_DOWN",
+                "options": [{"value": str(option)} for option in options]
+            }
         }
-    elif api_type == "LINEAR_SCALE":
-        scale_data = question.get("scale", {"low": 1, "high": 5})
-        formatted_question["questionItem"]["question"]["scaleQuestion"] = {
-            "low": scale_data.get("low", 1),
-            "high": scale_data.get("high", 5)
+    
+    elif question_type == "short_answer":
+        formatted_question["question"] = {
+            "questionId": formatted_question["questionId"],
+            "required": required,
+            "textQuestion": {
+                "type": "SHORT_ANSWER"
+            }
+        }
+    
+    elif question_type == "long_answer":
+        formatted_question["question"] = {
+            "questionId": formatted_question["questionId"],
+            "required": required,
+            "textQuestion": {
+                "type": "PARAGRAPH"
+            }
+        }
+    
+    elif question_type == "linear_scale":
+        min_value = question.get("min_value", 1)
+        max_value = question.get("max_value", 5)
+        min_label = question.get("min_label", "")
+        max_label = question.get("max_label", "")
+        
+        formatted_question["question"] = {
+            "questionId": formatted_question["questionId"],
+            "required": required,
+            "scaleQuestion": {
+                "low": min_value,
+                "high": max_value,
+                "lowLabel": min_label,
+                "highLabel": max_label
+            }
+        }
+    
+    else:
+        # Default to short answer for unknown types
+        formatted_question["question"] = {
+            "questionId": formatted_question["questionId"],
+            "required": required,
+            "textQuestion": {
+                "type": "SHORT_ANSWER"
+            }
         }
     
     return formatted_question 

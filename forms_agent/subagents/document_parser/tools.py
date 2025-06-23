@@ -17,16 +17,23 @@ from google.adk.tools.tool_context import ToolContext
 
 def parse_document(file_path: str, tool_context: Optional[ToolContext] = None) -> Dict[str, Any]:
     """
-    Parse a document file and extract text content.
+    Parse a document file and extract text content for form creation.
     
-    Supports: PDF, DOCX, TXT, MD files
+    Use this tool when you have a document (PDF, DOCX, TXT, MD) that contains questions
+    or form content that needs to be converted into a Google Form. This tool extracts
+    the text content and stores it in the session for further processing.
     
     Args:
-        file_path: Path to the document file
-        tool_context: Context for accessing session state
+        file_path: Path to the document file to parse
         
     Returns:
-        Dict containing extracted text and metadata
+        A dictionary containing extraction results with the following structure:
+        - status: 'success' or 'error'
+        - extracted_text: The full text content from the document
+        - metadata: Dictionary with file_type, file_path, and other file information
+        - text_length: Number of characters in the extracted text
+        - word_count: Number of words in the extracted text
+        - error_message: Present only if status is 'error'
     """
     try:
         file_extension = os.path.splitext(file_path)[1].lower()
@@ -41,18 +48,18 @@ def parse_document(file_path: str, tool_context: Optional[ToolContext] = None) -
             extracted_text = _parse_text_file(file_path)
         else:
             return {
-                "result": "error",
-                "message": f"Unsupported file type: {file_extension}",
+                "status": "error",
+                "error_message": f"Unsupported file type: {file_extension}",
                 "supported_types": [".pdf", ".docx", ".txt", ".md"]
             }
         
-        # Store in session for other agents
+        # Store in session state if tool_context is available
         if tool_context:
             tool_context.state["document_text"] = extracted_text
             tool_context.state["document_metadata"] = metadata
         
         return {
-            "result": "success",
+            "status": "success",
             "extracted_text": extracted_text,
             "metadata": metadata,
             "text_length": len(extracted_text),
@@ -61,8 +68,8 @@ def parse_document(file_path: str, tool_context: Optional[ToolContext] = None) -
         
     except Exception as e:
         return {
-            "result": "error",
-            "message": f"Failed to parse document: {str(e)}",
+            "status": "error",
+            "error_message": f"Failed to parse document: {str(e)}",
             "error_type": str(type(e).__name__)
         }
 
@@ -71,12 +78,20 @@ def extract_questions(text: str, tool_context: Optional[ToolContext] = None) -> 
     """
     Extract potential questions and form elements from parsed text.
     
+    Use this tool when you have extracted text from a document and want to identify
+    questions, form elements, and structure them for Google Forms creation. This tool
+    uses pattern matching to identify different question types and creates a structured
+    form representation.
+    
     Args:
-        text: The parsed document text
-        tool_context: Context for accessing session state
+        text: The parsed document text to analyze for questions
         
     Returns:
-        Dict containing extracted questions and form structure
+        A dictionary containing extracted form structure with the following structure:
+        - status: 'success' or 'error'
+        - form_structure: Dictionary with title, description, questions array, and metadata
+        - extraction_stats: Dictionary with counts of different question types
+        - error_message: Present only if status is 'error'
     """
     try:
         questions = []
@@ -134,13 +149,13 @@ def extract_questions(text: str, tool_context: Optional[ToolContext] = None) -> 
             "question_types": list(set([q["type"] for q in questions]))
         }
         
-        # Store in session
+        # Store in session state if tool_context is available
         if tool_context:
             tool_context.state["extracted_questions"] = questions
             tool_context.state["form_structure"] = form_structure
         
         return {
-            "result": "success",
+            "status": "success",
             "form_structure": form_structure,
             "extraction_stats": {
                 "total_questions": len(questions),
@@ -152,8 +167,8 @@ def extract_questions(text: str, tool_context: Optional[ToolContext] = None) -> 
         
     except Exception as e:
         return {
-            "result": "error",
-            "message": f"Failed to extract questions: {str(e)}",
+            "status": "error",
+            "error_message": f"Failed to extract questions: {str(e)}",
             "error_type": str(type(e).__name__)
         }
 
@@ -200,12 +215,19 @@ def _extract_options_for_question(text: str, question: str) -> List[str]:
 
 
 def _determine_question_type(question: str) -> str:
-    """Determine the appropriate question type based on content."""
+    """Determine the most appropriate question type based on question content."""
     question_lower = question.lower()
     
-    if any(word in question_lower for word in ["explain", "describe", "discuss", "elaborate"]):
+    # Keywords that suggest different question types
+    if any(word in question_lower for word in ["explain", "describe", "elaborate", "why", "how"]):
         return "long_answer"
-    elif "?" in question:
-        return "short_answer"
+    elif any(word in question_lower for word in ["rate", "scale", "score", "1-5", "1-10"]):
+        return "linear_scale"
+    elif any(word in question_lower for word in ["select all", "check all", "multiple"]):
+        return "checkbox"
+    elif any(word in question_lower for word in ["date", "when"]):
+        return "date"
+    elif any(word in question_lower for word in ["time", "hour"]):
+        return "time"
     else:
-        return "short_answer" 
+        return "short_answer"  # Default fallback 

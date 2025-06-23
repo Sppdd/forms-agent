@@ -15,12 +15,18 @@ def validate_form_structure(form_structure: Dict[str, Any], tool_context: Option
     """
     Validate the overall form structure for Google Forms compatibility.
     
+    Use this tool when you need to validate a form structure before creating or editing a Google Form.
+    This tool checks for required fields, character limits, question counts, and overall structure validity.
+    
     Args:
-        form_structure: The extracted form structure
-        tool_context: Context for accessing session state
+        form_structure: The extracted form structure containing title, description, and questions
         
     Returns:
-        Dict containing validation results
+        A dictionary containing validation results with the following structure:
+        - status: 'success' or 'error'
+        - validation: Dictionary with is_valid (bool), issues (list), warnings (list), question_count (int)
+        - summary: Human-readable summary of validation results
+        - error_message: Present only if status is 'error'
     """
     try:
         issues = []
@@ -58,7 +64,7 @@ def validate_form_structure(form_structure: Dict[str, Any], tool_context: Option
         # Overall validation status
         is_valid = len(issues) == 0
         
-        # Store validation results in session
+        # Store validation results in session state if tool_context is available
         validation_result = {
             "is_valid": is_valid,
             "issues": issues,
@@ -68,32 +74,40 @@ def validate_form_structure(form_structure: Dict[str, Any], tool_context: Option
         }
         
         if tool_context:
-        tool_context.state["validation_result"] = validation_result
+            tool_context.state["validation_result"] = validation_result
         
         return {
-            "result": "success",
+            "status": "success",
             "validation": validation_result,
             "summary": f"{'Valid' if is_valid else 'Invalid'} form with {len(issues)} issues and {len(warnings)} warnings"
         }
         
     except Exception as e:
         return {
-            "result": "error",
-            "message": f"Validation failed: {str(e)}",
+            "status": "error",
+            "error_message": f"Validation failed: {str(e)}",
             "error_type": str(type(e).__name__)
         }
 
 
 def check_question_types(questions: List[Dict[str, Any]], tool_context: Optional[ToolContext] = None) -> Dict[str, Any]:
     """
-    Check if question types are supported by Google Forms.
+    Check if question types are supported by Google Forms and convert them to compatible formats.
+    
+    Use this tool when you have questions that need to be validated for Google Forms compatibility.
+    This tool analyzes question types, suggests conversions for unsupported types, and provides
+    converted questions ready for Google Forms creation.
     
     Args:
-        questions: List of question dictionaries
-        tool_context: Context for accessing session state
+        questions: List of question dictionaries, each containing type, question text, and options
         
     Returns:
-        Dict containing question type validation results
+        A dictionary containing question type analysis with the following structure:
+        - status: 'success' or 'error'
+        - type_analysis: Dictionary with supported, unsupported, and conversion_needed lists
+        - converted_questions: List of questions converted to Google Forms format
+        - summary: Dictionary with counts of total, supported, needs_conversion, and unsupported questions
+        - error_message: Present only if status is 'error'
     """
     try:
         supported_types = {
@@ -157,13 +171,13 @@ def check_question_types(questions: List[Dict[str, Any]], tool_context: Optional
                         "question": question_text
                     })
         
-        # Store converted questions in session
+        # Store converted questions in session state if tool_context is available
         if tool_context:
-        tool_context.state["converted_questions"] = converted_questions
-        tool_context.state["type_analysis"] = type_analysis
+            tool_context.state["converted_questions"] = converted_questions
+            tool_context.state["type_analysis"] = type_analysis
         
         return {
-            "result": "success",
+            "status": "success",
             "type_analysis": type_analysis,
             "converted_questions": converted_questions,
             "summary": {
@@ -176,14 +190,14 @@ def check_question_types(questions: List[Dict[str, Any]], tool_context: Optional
         
     except Exception as e:
         return {
-            "result": "error",
-            "message": f"Question type validation failed: {str(e)}",
+            "status": "error",
+            "error_message": f"Question type validation failed: {str(e)}",
             "error_type": str(type(e).__name__)
         }
 
 
 def _validate_questions(questions: List[Dict[str, Any]]) -> Dict[str, List[str]]:
-    """Validate individual questions."""
+    """Validate individual questions for structure and content."""
     issues = []
     warnings = []
     
@@ -231,7 +245,7 @@ def _find_duplicates(items: List[str]) -> List[str]:
     return list(duplicates)
 
 
-def _suggest_type_conversion(original_type: str, question_text: str) -> str:
+def _suggest_type_conversion(original_type: str, question_text: str) -> Optional[str]:
     """Suggest a supported question type for unsupported types."""
     question_lower = question_text.lower()
     
@@ -262,39 +276,35 @@ def _suggest_type_conversion(original_type: str, question_text: str) -> str:
     elif any(word in question_lower for word in ["explain", "describe", "elaborate"]):
         return "long_answer"
     else:
-        return "short_answer"
+        return "short_answer"  # Default fallback
 
 
 def _convert_to_google_forms_format(question: Dict[str, Any], google_forms_type: str) -> Dict[str, Any]:
-    """Convert question to Google Forms API format."""
+    """Convert a question to Google Forms API format."""
     converted = {
-        "title": question.get("question", ""),
-        "questionType": google_forms_type,
+        "type": google_forms_type,
+        "question": question.get("question", ""),
         "required": question.get("required", False)
     }
     
     # Add type-specific properties
-    if google_forms_type == "MULTIPLE_CHOICE":
-        converted["choiceQuestion"] = {
-            "type": "RADIO",
-            "options": [{"value": str(option)} for option in question.get("options", [])]
-        }
-    elif google_forms_type == "CHECKBOX":
-        converted["choiceQuestion"] = {
-            "type": "CHECKBOX", 
-            "options": [{"value": str(option)} for option in question.get("options", [])]
-        }
-    elif google_forms_type == "DROP_DOWN":
-        converted["choiceQuestion"] = {
-            "type": "DROP_DOWN",
-            "options": [{"value": str(option)} for option in question.get("options", [])]
-        }
+    if google_forms_type in ["MULTIPLE_CHOICE", "CHECKBOX", "DROP_DOWN"]:
+        options = question.get("options", [])
+        if options:
+            converted["options"] = options
+    
     elif google_forms_type == "LINEAR_SCALE":
-        converted["scaleQuestion"] = {
-            "low": question.get("scale_min", 1),
-            "high": question.get("scale_max", 5),
-            "lowLabel": question.get("low_label", ""),
-            "highLabel": question.get("high_label", "")
-        }
+        converted["min_value"] = question.get("min_value", 1)
+        converted["max_value"] = question.get("max_value", 5)
+        converted["min_label"] = question.get("min_label", "")
+        converted["max_label"] = question.get("max_label", "")
+    
+    elif google_forms_type in ["MULTIPLE_CHOICE_GRID", "CHECKBOX_GRID"]:
+        converted["rows"] = question.get("rows", [])
+        converted["columns"] = question.get("columns", [])
+    
+    elif google_forms_type == "FILE_UPLOAD":
+        converted["max_files"] = question.get("max_files", 1)
+        converted["max_file_size"] = question.get("max_file_size", 10)  # MB
     
     return converted 
