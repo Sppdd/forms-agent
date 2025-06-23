@@ -59,6 +59,15 @@ service_account.json
 .env.test.local
 .env.production.local
 
+# Streamlit secrets
+.streamlit/secrets.toml
+secrets.toml
+
+# OAuth configuration files with real credentials
+*config.toml
+*_config.toml
+local_test_config.toml
+
 # Temporary files
 *.tmp
 *.temp

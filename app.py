@@ -43,196 +43,436 @@ SCOPES = [
 
 # Page configuration
 st.set_page_config(
-    page_title="Google Forms Agent",
-    page_icon="📝",
+    page_title="Google Forms Agent - AI-Powered Form Creation",
+    page_icon="🚀",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': 'https://github.com/your-repo/forms-agent',
+        'Report a bug': 'https://github.com/your-repo/forms-agent/issues',
+        'About': """
+        # Google Forms Agent 🚀
+        
+        Transform documents into interactive forms using AI!
+        
+        **Features:**
+        - AI-powered document analysis
+        - Automatic form generation
+        - Google Drive integration
+        - Secure OAuth authentication
+        
+        Made with ❤️ and Streamlit
+        """
+    }
 )
 
-# Simple, clean CSS - Google Forms inspired
+# Modern, Beautiful UI Design
 st.markdown("""
 <style>
-    /* Clean, minimal styling */
-    .main-header {
-        font-size: 2rem;
-        font-weight: 400;
-        color: #1f1f1f;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    /* Global Styles */
+    * {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    }
+    
+    .stApp {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+    
+    .main .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+        max-width: 1200px !important;
+    }
+    
+    /* Hero Header */
+    .hero-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 2rem;
+        border-radius: 20px;
         text-align: center;
         margin-bottom: 2rem;
+        box-shadow: 0 20px 40px rgba(102, 126, 234, 0.4);
+        position: relative;
+        overflow: hidden;
     }
     
-    .card {
-        background: #ffffff;
-        padding: 1.5rem;
-        border-radius: 8px;
-        border: 1px solid #dadce0;
-        margin-bottom: 1rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-        color: #202124;
+    .hero-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><defs><radialGradient id="a"><stop offset="0" stop-color="%23ffffff" stop-opacity=".1"/><stop offset="1" stop-color="%23ffffff" stop-opacity="0"/></radialGradient></defs><circle cx="200" cy="200" r="180" fill="url(%23a)"/><circle cx="800" cy="800" r="250" fill="url(%23a)"/><circle cx="400" cy="600" r="120" fill="url(%23a)"/></svg>') no-repeat;
+        background-size: cover;
+        opacity: 0.6;
     }
     
-    .chat-message-user {
-        background: #f1f3f4;
+    .hero-content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .hero-title {
+        font-size: 3.5rem !important;
+        font-weight: 700 !important;
+        margin-bottom: 1rem !important;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        background: linear-gradient(45deg, #ffffff, #f0f9ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.25rem !important;
+        font-weight: 400 !important;
+        opacity: 0.9;
+        margin-bottom: 2rem !important;
+    }
+    
+    /* Modern Cards */
+    .modern-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all 0.3s ease;
+    }
+    
+    .modern-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+    }
+    
+    .card-title {
+        font-size: 1.5rem !important;
+        font-weight: 600 !important;
+        color: #1a202c !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .card-subtitle {
+        color: #718096 !important;
+        font-size: 1rem !important;
+        margin-bottom: 1.5rem !important;
+    }
+    
+    /* Glassmorphism Sidebar */
+    .css-1d391kg {
+        background: rgba(255, 255, 255, 0.25) !important;
+        backdrop-filter: blur(10px) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.3) !important;
+    }
+    
+    /* Navigation Cards */
+    .nav-card {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
         padding: 1rem;
-        border-radius: 8px;
-        margin: 0.5rem 0;
-        border-left: 4px solid #4285f4;
-        color: #202124;
+        margin-bottom: 0.5rem;
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        transition: all 0.3s ease;
+        cursor: pointer;
     }
     
-    .chat-message-agent {
-        background: #e8f0fe;
-        padding: 1rem;
-        border-radius: 8px;
-        margin: 0.5rem 0;
-        border-left: 4px solid #34a853;
-        color: #202124;
+    .nav-card:hover {
+        background: rgba(102, 126, 234, 0.1);
+        transform: translateX(5px);
+        border-color: #667eea;
     }
     
-    .file-card {
-        background: #ffffff;
-        padding: 1rem;
-        border-radius: 8px;
-        border: 1px solid #dadce0;
-        margin-bottom: 1rem;
-        transition: box-shadow 0.2s;
-        color: #202124;
+    .nav-icon {
+        font-size: 1.5rem;
+        margin-right: 0.75rem;
     }
     
-    .file-card:hover {
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        border-color: #4285f4;
-    }
-    
-    /* Button styling */
+    /* Premium Buttons */
     .stButton > button {
-        background-color: #4285f4 !important;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
         color: white !important;
         border: none !important;
-        border-radius: 4px !important;
-        font-weight: 500 !important;
-        transition: background-color 0.2s !important;
-        height: 48px !important;
+        border-radius: 12px !important;
+        font-weight: 600 !important;
+        padding: 0.75rem 2rem !important;
+        font-size: 1rem !important;
+        letter-spacing: 0.5px !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4) !important;
+        position: relative !important;
+        overflow: hidden !important;
     }
     
     .stButton > button:hover {
-        background-color: #3367d6 !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.12) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6) !important;
     }
     
-    /* Sidebar styling */
-    .css-1d391kg {
-        background-color: #f8f9fa !important;
+    .stButton > button:active {
+        transform: translateY(0px) !important;
     }
     
-    /* Main content area */
-    .css-18e3th9 {
-        padding-top: 1rem !important;
-        background-color: #ffffff !important;
+    /* Animated Primary Button */
+    .primary-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 1rem 2rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
     }
     
-    /* Input styling */
-    .stTextArea textarea {
-        border: 1px solid #dadce0 !important;
-        border-radius: 4px !important;
-        background-color: #ffffff !important;
-        color: #202124 !important;
+    .primary-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        text-decoration: none;
+        color: white;
     }
     
-    .stTextInput input {
-        border: 1px solid #dadce0 !important;
-        border-radius: 4px !important;
-        background-color: #ffffff !important;
-        color: #202124 !important;
+    .primary-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
     }
     
-    .stTextArea textarea:focus, .stTextInput input:focus {
-        border-color: #4285f4 !important;
-        box-shadow: 0 0 0 1px #4285f4 !important;
+    .primary-button:hover::before {
+        left: 100%;
     }
     
-    /* Info/Warning/Error styling */
+    /* Modern Inputs */
+    .stTextInput input, .stTextArea textarea {
+        border: 2px solid #e2e8f0 !important;
+        border-radius: 12px !important;
+        padding: 0.75rem 1rem !important;
+        font-size: 1rem !important;
+        transition: all 0.3s ease !important;
+        background: rgba(255, 255, 255, 0.9) !important;
+        backdrop-filter: blur(5px) !important;
+    }
+    
+    .stTextInput input:focus, .stTextArea textarea:focus {
+        border-color: #667eea !important;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+        outline: none !important;
+    }
+    
+    /* Chat Messages */
+    .chat-message-user {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 20px 20px 5px 20px;
+        margin: 1rem 0;
+        margin-left: 2rem;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        position: relative;
+    }
+    
+    .chat-message-agent {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        color: #1a202c;
+        padding: 1.5rem;
+        border-radius: 20px 20px 20px 5px;
+        margin: 1rem 0;
+        margin-right: 2rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(102, 126, 234, 0.2);
+    }
+    
+    /* File Cards */
+    .file-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .file-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        border-color: #667eea;
+    }
+    
+    /* Status Indicators */
+    .status-online {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        background: #10b981;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    
+    /* Modern Alerts */
     .stAlert {
-        background-color: #ffffff !important;
-        border: 1px solid #dadce0 !important;
-        border-radius: 4px !important;
-        color: #202124 !important;
+        border-radius: 12px !important;
+        border: none !important;
+        backdrop-filter: blur(10px) !important;
     }
     
-    /* Success message */
-    .stAlert[data-baseweb="notification"] {
-        background-color: #e8f5e8 !important;
-        border-color: #34a853 !important;
-        color: #137333 !important;
+    .stSuccess {
+        background: rgba(16, 185, 129, 0.1) !important;
+        color: #047857 !important;
+        border-left: 4px solid #10b981 !important;
     }
     
-    /* Error message */
-    .stAlert[data-baseweb="notification"][kind="error"] {
-        background-color: #fce8e6 !important;
-        border-color: #ea4335 !important;
-        color: #d33b2c !important;
+    .stError {
+        background: rgba(239, 68, 68, 0.1) !important;
+        color: #b91c1c !important;
+        border-left: 4px solid #ef4444 !important;
     }
     
-    /* Warning message */
-    .stAlert[data-baseweb="notification"][kind="warning"] {
-        background-color: #fef7e0 !important;
-        border-color: #fbbc04 !important;
-        color: #b06000 !important;
+    .stWarning {
+        background: rgba(245, 158, 11, 0.1) !important;
+        color: #b45309 !important;
+        border-left: 4px solid #f59e0b !important;
     }
     
-    /* Info message */
-    .stAlert[data-baseweb="notification"][kind="info"] {
-        background-color: #e8f0fe !important;
-        border-color: #4285f4 !important;
-        color: #1967d2 !important;
+    .stInfo {
+        background: rgba(102, 126, 234, 0.1) !important;
+        color: #3730a3 !important;
+        border-left: 4px solid #667eea !important;
     }
     
-    /* Remove problematic backgrounds */
-    .stApp {
-        background-color: #ffffff !important;
-    }
-    
-    /* Fix text visibility */
-    .stMarkdown {
-        color: #202124 !important;
-    }
-    
-    /* Tab styling */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background-color: transparent !important;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        padding: 8px 16px;
-        border-radius: 4px;
-        background-color: #f8f9fa !important;
-        color: #5f6368 !important;
-    }
-    
-    .stTabs [data-baseweb="tab"][aria-selected="true"] {
-        background-color: #4285f4 !important;
-        color: #ffffff !important;
-    }
-    
-    /* Metric styling */
-    .metric-container {
-        background: #ffffff;
-        padding: 1rem;
-        border-radius: 8px;
-        border: 1px solid #dadce0;
+    /* Feature Cards */
+    .feature-card {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 2rem;
         text-align: center;
-        color: #202124;
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        transition: all 0.3s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
     }
     
-    /* Header text fix */
-    h1, h2, h3, h4, h5, h6 {
-        color: #202124 !important;
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     }
     
-    /* Ensure all text is visible */
-    p, span, div {
-        color: #202124 !important;
+    .feature-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #667eea;
+    }
+    
+    .feature-title {
+        font-size: 1.25rem !important;
+        font-weight: 600 !important;
+        color: #1a202c !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .feature-description {
+        color: #718096 !important;
+        line-height: 1.6 !important;
+    }
+    
+    /* Loading Animation */
+    .loading-spinner {
+        border: 3px solid rgba(102, 126, 234, 0.3);
+        border-radius: 50%;
+        border-top: 3px solid #667eea;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    /* Metric Cards */
+    .metric-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 1.5rem;
+        text-align: center;
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        transition: all 0.3s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .metric-value {
+        font-size: 2rem !important;
+        font-weight: 700 !important;
+        color: #667eea !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .metric-label {
+        color: #718096 !important;
+        font-size: 0.9rem !important;
+        font-weight: 500 !important;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 2.5rem !important;
+        }
+        
+        .main .block-container {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+        
+        .modern-card {
+            padding: 1.5rem !important;
+        }
+    }
+    
+    /* Hide Streamlit Branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Fix text colors */
+    .stMarkdown, .stText, p, span, div, h1, h2, h3, h4, h5, h6 {
+        color: inherit !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -254,39 +494,85 @@ def initialize_session_state():
             st.session_state[key] = value
 
 def show_navigation():
-    """Show navigation sidebar."""
+    """Show modern navigation sidebar."""
     with st.sidebar:
-        st.markdown("### 📝 Forms Agent")
-        st.markdown("---")
+        # Brand header
+        st.markdown("""
+        <div style="text-align: center; padding: 1rem 0; margin-bottom: 2rem;">
+            <h2 style="color: white; margin: 0; font-weight: 700;">📝 Forms Agent</h2>
+            <p style="color: rgba(255,255,255,0.8); margin: 0.5rem 0 0 0; font-size: 0.9rem;">AI-Powered Form Creation</p>
+        </div>
+        """, unsafe_allow_html=True)
         
         # Navigation menu
         pages = {
             "🏠 Home": "home",
-            "💬 Chat": "agent",
-            "📁 Files": "files"
+            "💬 AI Chat": "agent", 
+            "📁 Drive Files": "files"
         }
         
+        current_page = st.session_state.get('current_page', 'home')
+        
         for page_name, page_key in pages.items():
-            if st.button(page_name, use_container_width=True, key=f"nav_{page_key}"):
+            is_current = current_page == page_key
+            button_style = "background: rgba(255,255,255,0.2); border-left: 4px solid white;" if is_current else ""
+            
+            st.markdown(f"""
+            <div class="nav-card" style="{button_style}">
+                <span class="nav-icon">{page_name.split()[0]}</span>
+                <span style="font-weight: {'600' if is_current else '400'};">{' '.join(page_name.split()[1:])}</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button(page_name, use_container_width=True, key=f"nav_{page_key}", 
+                        type="primary" if is_current else "secondary"):
                 st.session_state.current_page = page_key
                 st.rerun()
         
-        st.markdown("---")
+        st.markdown("<br>", unsafe_allow_html=True)
         
-        # User info
+        # User info section
         if st.session_state.authenticated:
             user_info = st.session_state.user_info
-            st.markdown("**Signed in as:**")
-            st.write(f"{user_info.get('name', 'Unknown')}")
-            st.write(f"{user_info.get('email', 'Unknown')}")
+            user_name = user_info.get('name', 'Unknown User')
+            user_email = user_info.get('email', 'unknown@email.com')
             
-            if st.button("Sign out", use_container_width=True):
+            st.markdown(f"""
+            <div class="modern-card" style="margin-top: 2rem;">
+                <div style="text-align: center;">
+                    <div class="status-online"></div>
+                    <h4 style="color: #1a202c; margin: 0;">Signed In</h4>
+                    <p style="color: #667eea; font-weight: 600; margin: 0.5rem 0;">{user_name}</p>
+                    <p style="color: #718096; font-size: 0.8rem; margin: 0;">{user_email}</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            if st.button("🚪 Sign Out", use_container_width=True, type="secondary"):
                 for key in ['authenticated', 'credentials', 'user_info', 'chat_history']:
                     st.session_state[key] = False if key == 'authenticated' else None if key != 'chat_history' else []
                 st.session_state.current_page = 'home'
                 st.rerun()
         else:
-            st.info("Sign in to get started")
+            st.markdown("""
+            <div class="modern-card" style="margin-top: 2rem;">
+                <div style="text-align: center;">
+                    <h4 style="color: #1a202c; margin: 0;">Not Signed In</h4>
+                    <p style="color: #718096; font-size: 0.9rem; margin: 0.5rem 0;">Sign in to get started</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Footer
+        st.markdown("""
+        <div style="position: absolute; bottom: 1rem; left: 1rem; right: 1rem; text-align: center;">
+            <p style="color: rgba(255,255,255,0.6); font-size: 0.8rem; margin: 0;">
+                Powered by AI • Secure & Fast
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
 def get_oauth_credentials():
     """Get OAuth credentials using Streamlit secrets."""
@@ -343,8 +629,16 @@ def handle_oauth_flow(client_id: str, client_secret: str, redirect_uri: str):
         
         try:
             with st.spinner("Completing authentication..."):
-                # Exchange code for tokens
+                # Exchange code for tokens - Fix 403 issues with proper headers and error handling
                 token_url = "https://oauth2.googleapis.com/token"
+                
+                # Prepare headers with proper Content-Type (this fixes many 403 issues)
+                headers = {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json',
+                    'User-Agent': 'StreamlitApp/1.0'
+                }
+                
                 token_data = {
                     'client_id': client_id,
                     'client_secret': client_secret,
@@ -353,7 +647,15 @@ def handle_oauth_flow(client_id: str, client_secret: str, redirect_uri: str):
                     'redirect_uri': redirect_uri
                 }
                 
-                response = requests.post(token_url, data=token_data)
+                # Add timeout and better error handling
+                response = requests.post(
+                    token_url, 
+                    data=token_data, 
+                    headers=headers,
+                    timeout=30
+                )
+                
+                # Enhanced error handling for 403 and other status codes
                 if response.status_code == 200:
                     tokens = response.json()
                     credentials = Credentials(
@@ -383,42 +685,110 @@ def handle_oauth_flow(client_id: str, client_secret: str, redirect_uri: str):
                     
                     st.success("Authentication successful!")
                     st.rerun()
-                else:
-                    st.error("Authentication failed")
+                
+                elif response.status_code == 403:
+                    # Specific handling for 403 errors
+                    try:
+                        error_data = response.json()
+                        error_msg = error_data.get('error', 'Unknown error')
+                        error_desc = error_data.get('error_description', 'No description')
+                        
+                        st.error("**403 Forbidden Error:** OAuth token exchange failed")
+                        st.error(f"**Error:** {error_msg}")
+                        st.error(f"**Description:** {error_desc}")
+                        
+                        # Common 403 fixes
+                        st.markdown("### Possible solutions:")
+                        st.markdown("1. **Check your OAuth credentials** - Verify client_id and client_secret in Google Cloud Console")
+                        st.markdown("2. **Verify redirect URI** - Ensure it exactly matches your Google Cloud project settings")
+                        st.markdown("3. **Check API quotas** - Ensure you haven't exceeded Google API limits")
+                        st.markdown("4. **Enable required APIs** - Make sure Google Forms API and Google Drive API are enabled")
+                        st.markdown("5. **Check OAuth consent screen** - Ensure it's properly configured and published")
+                        
+                        # Show debug info
+                        with st.expander("Debug Information"):
+                            st.write(f"**Client ID:** {client_id[:20]}...")
+                            st.write(f"**Redirect URI:** {redirect_uri}")
+                            st.write(f"**Response Status:** {response.status_code}")
+                            st.write(f"**Response Headers:** {dict(response.headers)}")
+                            
+                    except json.JSONDecodeError:
+                        st.error("403 Forbidden: Unable to parse error response")
+                        st.text(f"Raw response: {response.text}")
+                    
                     return None
+                
+                elif response.status_code == 400:
+                    # Handle 400 Bad Request (often authorization code issues)
+                    try:
+                        error_data = response.json()
+                        error_msg = error_data.get('error', 'Unknown error')
+                        
+                        if error_msg == 'invalid_grant':
+                            st.error("**Authorization code expired or invalid.** Please try authenticating again.")
+                            st.info("Authorization codes expire quickly. Click 'Sign in with Google' again.")
+                        else:
+                            st.error(f"Bad Request (400): {error_msg}")
+                            st.error(f"Description: {error_data.get('error_description', 'No description')}")
+                    except json.JSONDecodeError:
+                        st.error("400 Bad Request: Unable to parse error response")
+                
+                else:
+                    # Handle other HTTP errors
+                    st.error(f"Authentication failed with status code: {response.status_code}")
+                    try:
+                        error_data = response.json()
+                        st.error(f"Error: {error_data}")
+                    except:
+                        st.error(f"Raw response: {response.text}")
+                    
+                    return None
+                    
+        except requests.exceptions.Timeout:
+            st.error("Authentication request timed out. Please try again.")
+            return None
+        except requests.exceptions.ConnectionError:
+            st.error("Network connection error. Please check your internet connection and try again.")
+            return None
         except Exception as e:
             st.error(f"Error during authentication: {e}")
+            st.error("Please try the authentication process again.")
             return None
     
     # Show login
     st.markdown("""
-    <div class="card">
-        <h3>Sign in to Google</h3>
-        <p>Connect your Google account to create forms and access your Drive files.</p>
+    <div class="modern-card">
+        <div style="text-align: center;">
+            <h3 class="card-title">🔐 Sign in to Google</h3>
+            <p class="card-subtitle">Connect your Google account to create forms and access your Drive files.</p>
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Create OAuth URL
+    # Create OAuth URL with proper encoding
     import urllib.parse
     scope_param = urllib.parse.quote(' '.join(SCOPES))
-    auth_url = f"https://accounts.google.com/o/oauth2/auth?client_id={client_id}&redirect_uri={urllib.parse.quote(redirect_uri)}&scope={scope_param}&response_type=code&access_type=offline&prompt=consent"
     
-    # Direct link button
+    # Ensure redirect_uri is properly encoded and matches exactly what's in Google Cloud Console
+    encoded_redirect_uri = urllib.parse.quote(redirect_uri, safe='')
+    
+    auth_url = f"https://accounts.google.com/o/oauth2/auth?client_id={client_id}&redirect_uri={encoded_redirect_uri}&scope={scope_param}&response_type=code&access_type=offline&prompt=consent"
+    
+    # Show current configuration for debugging
+    with st.expander("🔧 OAuth Configuration (for debugging)", expanded=False):
+        st.markdown(f"""
+        <div class="modern-card">
+            <p><strong>Client ID:</strong> {client_id}</p>
+            <p><strong>Redirect URI:</strong> {redirect_uri}</p>
+            <p><strong>Scopes:</strong> {', '.join(SCOPES)}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Modern sign-in button
     st.markdown(f"""
-    <div style="text-align: center; margin: 1rem 0;">
-        <a href="{auth_url}" target="_self">
-            <button style="
-                background: #4285f4;
-                color: white;
-                padding: 12px 24px;
-                border: none;
-                border-radius: 4px;
-                font-size: 16px;
-                cursor: pointer;
-                text-decoration: none;
-            ">
-                Sign in with Google
-            </button>
+    <div style="text-align: center; margin: 2rem 0;">
+        <a href="{auth_url}" target="_self" class="primary-button">
+            🚀 Sign in with Google
         </a>
     </div>
     """, unsafe_allow_html=True)
@@ -677,39 +1047,148 @@ def show_drive_files():
                     st.success("Conversion started! Check the Chat tab.")
 
 def show_home_page():
-    """Show the home page."""
-    st.markdown('<h1 class="main-header">Google Forms Agent</h1>', unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown("""
-        <div class="card" style="text-align: center;">
-            <h3>Transform documents into Google Forms</h3>
-            <p>Use AI to convert any document into an interactive form in seconds.</p>
+    """Show the modern, beautiful home page."""
+    # Hero Section
+    st.markdown("""
+    <div class="hero-header">
+        <div class="hero-content">
+            <h1 class="hero-title">📝 Google Forms Agent</h1>
+            <p class="hero-subtitle">Transform documents into interactive forms with the power of AI</p>
         </div>
-        """, unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
     
     if st.session_state.authenticated:
-        st.success("You're signed in and ready to go!")
+        # Welcome back section
+        user_name = st.session_state.user_info.get('name', 'User')
+        st.markdown(f"""
+        <div class="modern-card">
+            <div style="text-align: center;">
+                <div class="status-online"></div>
+                <h3 style="color: #1a202c; margin: 0;">Welcome back, {user_name}! 👋</h3>
+                <p style="color: #718096; margin-top: 0.5rem;">You're authenticated and ready to create amazing forms.</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
+        # Feature Cards
         col1, col2, col3 = st.columns(3)
         
         with col1:
+            st.markdown("""
+            <div class="feature-card">
+                <div class="feature-icon">💬</div>
+                <h3 class="feature-title">AI Chat</h3>
+                <p class="feature-description">Chat with our AI to create forms from your ideas and documents.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
             if st.button("Start Chatting", use_container_width=True):
                 st.session_state.current_page = 'agent'
                 st.rerun()
         
         with col2:
+            st.markdown("""
+            <div class="feature-card">
+                <div class="feature-icon">📁</div>
+                <h3 class="feature-title">Drive Files</h3>
+                <p class="feature-description">Browse and convert your Google Drive documents into forms.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
             if st.button("Browse Files", use_container_width=True):
                 st.session_state.current_page = 'files'
                 st.rerun()
         
         with col3:
+            st.markdown("""
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3 class="feature-title">Quick Actions</h3>
+                <p class="feature-description">Access powerful form creation and editing tools instantly.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
             if st.button("Quick Actions", use_container_width=True):
                 st.session_state.current_page = 'actions'
                 st.rerun()
+        
+        # Stats Section
+        st.markdown("### 📊 Your Dashboard")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.markdown("""
+            <div class="metric-card">
+                <div class="metric-value">0</div>
+                <div class="metric-label">Forms Created</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown("""
+            <div class="metric-card">
+                <div class="metric-value">0</div>
+                <div class="metric-label">Documents Processed</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown("""
+            <div class="metric-card">
+                <div class="metric-value">0</div>
+                <div class="metric-label">Responses Collected</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            st.markdown("""
+            <div class="metric-card">
+                <div class="metric-value">100%</div>
+                <div class="metric-label">Success Rate</div>
+            </div>
+            """, unsafe_allow_html=True)
+    
     else:
-        st.info("Sign in with your Google account to get started.")
+        # Sign-in section for non-authenticated users
+        st.markdown("""
+        <div class="modern-card">
+            <div style="text-align: center;">
+                <h3 class="card-title">🚀 Get Started</h3>
+                <p class="card-subtitle">Sign in with your Google account to unlock powerful form creation capabilities.</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Benefits section
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown("""
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <h3 class="feature-title">AI-Powered</h3>
+                <p class="feature-description">Convert any document into a structured form using advanced AI technology.</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown("""
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3 class="feature-title">Secure</h3>
+                <p class="feature-description">Your data is protected with OAuth 2.0 authentication and encrypted connections.</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown("""
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3 class="feature-title">Fast</h3>
+                <p class="feature-description">Create professional forms in seconds, not hours. Streamline your workflow.</p>
+            </div>
+            """, unsafe_allow_html=True)
 
 def show_quick_actions():
     """Show quick action templates."""
